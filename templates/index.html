@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>try{if(localStorage.getItem('goree-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}</script>
     <title>Gorée AR — Corpus documentaire</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,7 +96,7 @@
           <span>Clé API {{ 'OK' if has_api_key else 'absente' }}</span>
         </div>
         {% if has_api_key %}
-        <p class="mt-1 font-mono text-[11px] text-muted/80">{{ api_key_masked }}</p>
+        <p class="mt-1 font-mono text-[11px] text-muted">{{ api_key_masked }}</p>
         {% endif %}
       </div>
     </aside>
@@ -148,7 +149,7 @@
                 <input type="text" x-model="newStoreName" required
                        placeholder="goree-musee-salle2"
                        class="flex-1 sm:max-w-xs bg-surface border border-line rounded-sm px-3 py-2
-                              text-sm text-ink placeholder-muted/60
+                              text-sm text-ink placeholder-muted
                               focus:outline-none focus:border-accent">
                 <button type="submit" :disabled="loading"
                         class="bg-accent hover:bg-accent-hover text-bg font-medium text-sm
@@ -208,7 +209,7 @@
                       <p class="text-[13px] text-muted">Aucun document indexé.</p>
                     </template>
                     <template x-for="doc in store.docs" :key="doc.name">
-                      <div class="flex items-center gap-3 py-1.5 border-b border-line/60 last:border-0">
+                      <div class="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
                         <i data-lucide="file-text" class="w-4 h-4 text-muted shrink-0"></i>
                         <span class="text-sm text-ink truncate flex-1" x-text="doc.display_name"></span>
                         <span class="text-[12px] text-muted" x-text="doc.state.toLowerCase()"></span>
@@ -289,7 +290,7 @@
                 <textarea x-model="playgroundQuestion" rows="3" required
                           placeholder="Quelle est l'histoire de la porte du voyage sans retour ?"
                           class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
-                                 placeholder-muted/60 focus:outline-none focus:border-accent"></textarea>
+                                 placeholder-muted focus:outline-none focus:border-accent"></textarea>
               </div>
 
               <button type="submit" :disabled="playgroundLoading"

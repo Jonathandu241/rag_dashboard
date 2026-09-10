@@ -87,7 +87,7 @@ function ragApp() {
         },
 
         async deleteStore(storeName, displayName) {
-            if (!confirm(`Confirmer la suppression du store '${displayName}' et de TOUS ses documents ?`)) return;
+            if (!confirm(`Confirmer la suppression du fonds '${displayName}' et de tous ses documents ?`)) return;
             const fd = new FormData();
             fd.append('store_name', storeName);
             this.loading = true;
@@ -109,7 +109,7 @@ function ragApp() {
             fd.append('store_name', storeName);
             fd.append('file', file);
             this.loading = true;
-            this.showToast(`Upload et indexation de '${file.name}' chez Google en cours...`);
+            this.showToast(`Indexation de '${file.name}' en cours…`);
             try {
                 const res = await fetch('/api/documents/upload', { method: 'POST', body: fd });
                 if (res.ok) {
@@ -128,7 +128,7 @@ function ragApp() {
         },
 
         async deleteDocument(docName) {
-            if (!confirm("Supprimer ce document du store ?")) return;
+            if (!confirm("Supprimer ce document du fonds ?")) return;
             const fd = new FormData();
             fd.append('document_name', docName);
             this.loading = true;
