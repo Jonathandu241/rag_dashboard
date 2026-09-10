@@ -314,8 +314,51 @@
           </div>
 
           <!-- VUE : AIDE  (tâche 8) -->
-          <div x-show="currentTab === 'aide'" class="space-y-6" style="display:none">
-            <p class="text-muted text-sm">Contenu Aide — mis en place tâche 8.</p>
+          <div x-show="currentTab === 'aide'" class="space-y-8 prose-help" style="display:none">
+
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Un fonds par lieu</h2>
+              <p class="text-sm text-muted">
+                Créez un fonds distinct pour chaque monument ou chaque salle physique du musée :
+                <span class="font-mono text-[13px]">goree-maison-esclaves</span>,
+                <span class="font-mono text-[13px]">goree-musee-salle1</span>,
+                <span class="font-mono text-[13px]">goree-musee-salle2</span>…
+                Ce cloisonnement évite les erreurs d'étiquetage et garde chaque contexte
+                historique étanche.
+              </p>
+            </section>
+
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Reporter l'identifiant dans SQLite</h2>
+              <p class="text-sm text-muted">
+                Chaque fonds reçoit un identifiant technique du type
+                <span class="font-mono text-[13px] break-all">fileSearchStores/goreemaisonesclaves-vxqxk0scxpj5</span>.
+                Copiez-le depuis la vue Corpus et collez-le dans la colonne
+                <span class="font-mono text-[13px]">nom_store_rag</span> de la table
+                <span class="font-mono text-[13px]">Site</span>, base
+                <span class="font-mono text-[13px]">goree_ar.db</span> de l'application Unity.
+              </p>
+            </section>
+
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Documents acceptés</h2>
+              <p class="text-sm text-muted">
+                PDF uniquement. À l'envoi, le nom d'origine du fichier est conservé.
+                Google réalise le découpage, les embeddings et l'indexation ; l'opération
+                peut prendre quelques secondes avant que le document passe à l'état
+                <span class="font-mono text-[13px]">active</span>.
+              </p>
+            </section>
+
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Règle BNF4 — refus hors périmètre</h2>
+              <p class="text-sm text-muted">
+                Le guide ne répond qu'à partir des documents du fonds et des faits historiques
+                de Gorée et de la traite négrière. Toute question sans lien (géographie
+                générale, météo, calcul…) doit être poliment refusée. La vue Test permet de
+                vérifier ce comportement avant de relier un fonds à l'application.
+              </p>
+            </section>
           </div>
 
         </div>
