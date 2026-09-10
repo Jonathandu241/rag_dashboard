@@ -1,15 +1,19 @@
 import os
 import time
+import secrets
 import tempfile
 import json
 import uuid
 import urllib.request
+from datetime import datetime, timezone
 from typing import Optional
 from dotenv import load_dotenv
+import bcrypt
 from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 from google import genai
 from google.genai import types
 
@@ -18,10 +22,26 @@ load_dotenv()
 
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-# --- Supabase (stockage des PDF sources + table de suivi) ---
+# --- Supabase (stockage des PDF sources + table de suivi + comptes admin) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 SUPABASE_BUCKET = "corpus-pdfs"
+
+# --- Authentification (session par cookie signé) ---
+SESSION_SECRET = os.environ.get("SESSION_SECRET", "")
+SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
+if not SESSION_SECRET:
+    SESSION_SECRET = secrets.token_urlsafe(48)
+    print("[!] SESSION_SECRET absent du .env : clé éphémère générée (les sessions "
+          "seront invalidées à chaque redémarrage). Ajoutez SESSION_SECRET au .env.")
+
+# Chemins accessibles sans être connecté
+PUBLIC_PATHS = ("/login", "/logout", "/static", "/favicon.ico")
+
+# Anti brute-force basique : {ip: [timestamps]} des tentatives échouées
+_login_attempts: dict[str, list[float]] = {}
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 300
 
 _supabase = None
 
@@ -43,6 +63,32 @@ SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_KEY)
 app = FastAPI(title="Gorée AR — RAG Studio")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+@app.middleware("http")
+async def require_login(request: Request, call_next):
+    """Refuse toute requête si la session ne porte pas d'utilisateur —
+    redirection vers /login pour les pages, 401 JSON pour /api/*.
+    Enregistré AVANT SessionMiddleware pour qu'il s'exécute APRÈS lui
+    (Starlette exécute les middlewares dans l'ordre inverse de l'ajout)."""
+    path = request.url.path
+    if path.startswith(PUBLIC_PATHS) or request.session.get("user_id"):
+        return await call_next(request)
+    if path.startswith("/api/"):
+        return JSONResponse({"detail": "Non authentifié."}, status_code=401)
+    return RedirectResponse("/login", status_code=302)
+
+
+# Ajouté APRÈS require_login → devient le middleware le plus externe → request.session
+# est peuplé avant que require_login ne s'exécute.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    session_cookie="goree_session",
+    https_only=SESSION_COOKIE_SECURE,
+    same_site="lax",
+    max_age=60 * 60 * 8,  # 8 h
+)
 
 
 def get_client():
@@ -129,6 +175,105 @@ Adopte un ton chaleureux, digne, bienveillant et pédagogique, fidèle à la tra
 </style_de_reponse>"""
 
 
+# ─────────────────────────── Authentification ───────────────────────────
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _rate_limited(ip: str) -> bool:
+    now = time.time()
+    attempts = [t for t in _login_attempts.get(ip, []) if now - t < LOGIN_WINDOW_SECONDS]
+    _login_attempts[ip] = attempts
+    return len(attempts) >= LOGIN_MAX_ATTEMPTS
+
+
+def _record_failed_attempt(ip: str):
+    _login_attempts.setdefault(ip, []).append(time.time())
+
+
+def _find_admin_by_email(email: str) -> Optional[dict]:
+    sb = get_supabase()
+    if sb is None:
+        return None
+    try:
+        res = sb.table("admin_users").select("*").ilike("email", email.strip()).limit(1).execute()
+        rows = res.data or []
+        return rows[0] if rows else None
+    except Exception:
+        return None
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    if request.session.get("user_id"):
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse(
+        request=request, name="login.html", context={"error": None, "email": ""}
+    )
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login_submit(request: Request, email: str = Form(...), password: str = Form(...)):
+    ip = _client_ip(request)
+
+    if _rate_limited(ip):
+        return templates.TemplateResponse(
+            request=request, name="login.html",
+            context={"error": "Trop de tentatives. Réessayez dans quelques minutes.", "email": email},
+            status_code=429,
+        )
+
+    if not SUPABASE_ENABLED:
+        return templates.TemplateResponse(
+            request=request, name="login.html",
+            context={"error": "Authentification indisponible : Supabase non configuré.", "email": email},
+            status_code=503,
+        )
+
+    admin = _find_admin_by_email(email)
+    ok = bool(
+        admin
+        and admin.get("is_active")
+        and admin.get("password_hash")
+        and bcrypt.checkpw(password.encode("utf-8"), admin["password_hash"].encode("utf-8"))
+    )
+    if not ok:
+        _record_failed_attempt(ip)
+        return templates.TemplateResponse(
+            request=request, name="login.html",
+            context={"error": "Identifiants invalides.", "email": email},
+            status_code=401,
+        )
+
+    request.session["user_id"] = admin["id"]
+    request.session["user_email"] = admin["email"]
+    request.session["user_name"] = admin.get("full_name") or admin["email"]
+    _login_attempts.pop(ip, None)
+
+    sb = get_supabase()
+    if sb is not None:
+        try:
+            sb.table("admin_users").update(
+                {"last_login_at": datetime.now(timezone.utc).isoformat()}
+            ).eq("id", admin["id"]).execute()
+        except Exception:
+            pass
+
+    return RedirectResponse("/", status_code=302)
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=302)
+
+
+# ─────────────────────────── Pages & API ───────────────────────────
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     has_key = bool(API_KEY)
@@ -140,6 +285,8 @@ async def index(request: Request):
         context={
             "has_api_key": has_key,
             "api_key_masked": masked_key,
+            "current_user_name": request.session.get("user_name", ""),
+            "current_user_email": request.session.get("user_email", ""),
         }
     )
 

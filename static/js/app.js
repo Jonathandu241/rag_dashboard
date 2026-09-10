@@ -66,10 +66,20 @@ function ragApp() {
             setTimeout(() => this.toast.show = false, 3000);
         },
 
+        // Renvoie true si la session a expiré (401) et redirige vers /login
+        _checkAuth(res) {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return true;
+            }
+            return false;
+        },
+
         async fetchStores() {
             this.loading = true;
             try {
                 const res = await fetch('/api/stores');
+                if (this._checkAuth(res)) return;
                 const data = await res.json();
                 this.stores = data.stores;
                 this.stats = data.stats;
@@ -88,6 +98,7 @@ function ragApp() {
             this.loading = true;
             try {
                 const res = await fetch('/api/stores/create', { method: 'POST', body: fd });
+                if (this._checkAuth(res)) return;
                 if (res.ok) {
                     this.newStoreName = '';
                     this.showToast("Store créé avec succès !");
@@ -106,7 +117,8 @@ function ragApp() {
             fd.append('store_name', storeName);
             this.loading = true;
             try {
-                await fetch('/api/stores/delete', { method: 'POST', body: fd });
+                const res = await fetch('/api/stores/delete', { method: 'POST', body: fd });
+                if (this._checkAuth(res)) return;
                 this.showToast("Store supprimé.");
                 await this.fetchStores();
             } catch (e) {
@@ -126,6 +138,7 @@ function ragApp() {
             this.showToast(`Upload et indexation de '${file.name}' chez Google en cours...`);
             try {
                 const res = await fetch('/api/documents/upload', { method: 'POST', body: fd });
+                if (this._checkAuth(res)) return;
                 if (res.ok) {
                     this.showToast(`Document '${file.name}' indexé avec succès !`);
                     await this.fetchStores();
@@ -147,7 +160,8 @@ function ragApp() {
             fd.append('document_name', docName);
             this.loading = true;
             try {
-                await fetch('/api/documents/delete', { method: 'POST', body: fd });
+                const res = await fetch('/api/documents/delete', { method: 'POST', body: fd });
+                if (this._checkAuth(res)) return;
                 this.showToast("Document supprimé.");
                 await this.fetchStores();
             } catch (e) {
@@ -169,6 +183,7 @@ function ragApp() {
             fd.append('langue', this.selectedLangue);
             try {
                 const res = await fetch('/api/playground/test', { method: 'POST', body: fd });
+                if (this._checkAuth(res)) return;
                 const data = await res.json();
                 if (res.ok) {
                     this.playgroundAnswer = data.answer;

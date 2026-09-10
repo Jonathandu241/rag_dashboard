@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Gorée AR RAG Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {
+                fontFamily: {
+                    display: ['Marcellus', 'serif'],
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                },
+                colors: { goree: {
+                    bg: '#0B0D17', surface: '#13172B', card: '#1B203B',
+                    border: 'rgba(232, 200, 74, 0.15)',
+                    gold: '#E8C84A', goldHover: '#F4D665', accent: '#3B82F6',
+                }}
+            }}
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="text-slate-100 font-sans min-h-screen flex items-center justify-center p-6 antialiased">
+
+    <div class="w-full max-w-sm">
+        <!-- Logo -->
+        <div class="flex flex-col items-center mb-8">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-goree-gold to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/10 mb-4">
+                <i data-lucide="landmark" class="w-7 h-7 text-goree-bg"></i>
+            </div>
+            <h1 class="font-display text-2xl tracking-wide text-white">GORÉE AR</h1>
+            <span class="text-goree-gold text-[11px] font-semibold uppercase tracking-widest mt-1">RAG Studio — Back-Office</span>
+        </div>
+
+        <!-- Carte de connexion -->
+        <div class="bg-goree-surface border border-goree-border rounded-2xl p-8 shadow-lg shadow-black/20">
+            <h2 class="font-display text-lg text-white mb-1">Connexion</h2>
+            <p class="text-xs text-slate-400 mb-6">Accès réservé aux administrateurs du corpus.</p>
+
+            {% if error %}
+            <div class="mb-4 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form method="post" action="/login" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Adresse e-mail</label>
+                    <input type="email" id="email" name="email" required autofocus value="{{ email }}"
+                        class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-goree-gold/60 transition-all">
+                </div>
+                <div>
+                    <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Mot de passe</label>
+                    <input type="password" id="password" name="password" required
+                        class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-goree-gold/60 transition-all">
+                </div>
+                <button type="submit"
+                    class="w-full bg-goree-gold hover:bg-goree-goldHover text-goree-bg font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Se connecter
+                </button>
+            </form>
+        </div>
+
+        <p class="text-center text-[11px] text-slate-600 mt-6">
+            Gestionnaire de Corpus Documentaire • Gemini File Search Tool
+        </p>
+    </div>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

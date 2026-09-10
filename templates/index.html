@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Composant Alpine : défini AVANT Alpine (defer garantit l'ordre) -->
-    <script defer src="/static/js/app.js?v=2"></script>
+    <script defer src="/static/js/app.js?v=3"></script>
     <!-- Tailwind & Alpine.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -130,10 +130,23 @@
                 <button @click="sidebarOpen = true" class="lg:hidden text-slate-400 hover:text-white" aria-label="Ouvrir le menu">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                     <h2 class="font-display text-xl tracking-wide text-white truncate"
                         x-text="{ corpus: 'Gestionnaire de Corpus Documentaire', documents: 'Documents Indexés', test: 'Bac à sable de Test RAG', aide: 'Aide & Conventions du Projet' }[currentTab]"></h2>
                     <p class="text-xs text-slate-400 truncate">Gemini File Search Tool • Back-Office Gorée AR</p>
+                </div>
+
+                <!-- Utilisateur connecté -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+                        <i data-lucide="user-circle" class="w-4 h-4"></i>
+                        <span class="truncate max-w-[160px]" title="{{ current_user_email }}">{{ current_user_name }}</span>
+                    </div>
+                    <a href="/logout" title="Se déconnecter"
+                       class="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-3 py-1.5 rounded-lg transition-all">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">Déconnexion</span>
+                    </a>
                 </div>
             </header>
 
