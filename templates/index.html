@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gorée AR — RAG Studio & Corpus Manager</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind & Alpine.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/static/js/app.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Marcellus', 'serif'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        goree: {
+                            bg: '#0B0D17',
+                            surface: '#13172B',
+                            card: '#1B203B',
+                            border: 'rgba(232, 200, 74, 0.15)',
+                            gold: '#E8C84A',
+                            goldHover: '#F4D665',
+                            accent: '#3B82F6',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0D17;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(232, 200, 74, 0.05) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+        }
+    </style>
+</head>
+<body class="text-slate-100 font-sans min-h-screen flex flex-col antialiased" x-data="ragApp()" x-init="init()">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-goree-border bg-goree-surface/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-goree-gold to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                    <i data-lucide="landmark" class="w-6 h-6 text-goree-bg"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-xl tracking-wide text-white">GORÉE AR <span class="text-goree-gold font-sans text-xs font-semibold px-2 py-0.5 rounded-full border border-goree-gold/30 bg-goree-gold/10 ml-2">RAG STUDIO</span></h1>
+                    <p class="text-xs text-slate-400">Gestionnaire de Corpus Documentaire • Gemini File Search Tool</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs & API Key Indicator -->
+            <div class="flex items-center space-x-6">
+                <div class="flex bg-goree-bg/60 p-1 rounded-xl border border-white/5">
+                    <button @click="currentTab = 'corpus'" :class="currentTab === 'corpus' ? 'bg-goree-gold text-goree-bg font-semibold shadow-md' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                        <i data-lucide="folder-kanban" class="w-4 h-4"></i> Corpus & Stores
+                    </button>
+                    <button @click="currentTab = 'playground'" :class="currentTab === 'playground' ? 'bg-goree-gold text-goree-bg font-semibold shadow-md' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Bac à sable (Test IA)
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3 pl-4 border-l border-white/10">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        API Connectée
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+
+        <!-- TAB 1 : GESTION DES CORPUS & STORES -->
+        <div x-show="currentTab === 'corpus'" class="space-y-8">
+            
+            <!-- Statistiques / KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Stores Actifs</p>
+                            <h3 class="text-3xl font-bold mt-2 text-white font-display" x-text="stats.total_stores">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-goree-gold/10 border border-goree-gold/20 flex items-center justify-center text-goree-gold">
+                            <i data-lucide="folders" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Documents Indexés</p>
+                            <h3 class="text-3xl font-bold mt-2 text-white font-display" x-text="stats.total_docs">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Modèle de RAG</p>
+                            <h3 class="text-lg font-bold mt-2 text-goree-gold">Gemini 3.5 Flash Lite</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                            <i data-lucide="cpu" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar (Création de Store) -->
+            <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-white font-display">Créer un nouveau File Search Store</h2>
+                    <p class="text-sm text-slate-400">Ajoutez un conteneur dédié à un monument ou une salle spécifique (ex: Maison des Esclaves, Musée Salle 1).</p>
+                </div>
+                <form @submit.prevent="createStore()" class="flex items-center gap-3 w-full md:w-auto">
+                    <input type="text" x-model="newStoreName" placeholder="ex: goree-musee-salle2" required 
+                        class="bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-goree-gold/60 w-full md:w-64 transition-all">
+                    <button type="submit" :disabled="loading" class="bg-goree-gold hover:bg-goree-goldHover text-goree-bg font-semibold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Créer Store
+                    </button>
+                </form>
+            </div>
+
+            <!-- Liste des Stores -->
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold font-display text-white">Stores Documentaires Déployés</h2>
+                    <button @click="fetchStores()" class="text-xs text-slate-400 hover:text-goree-gold flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''"></i> Actualiser
+                    </button>
+                </div>
+
+                <template x-if="stores.length === 0">
+                    <div class="bg-goree-surface/50 border border-dashed border-white/10 rounded-2xl p-12 text-center">
+                        <i data-lucide="inbox" class="w-12 h-12 text-slate-500 mx-auto mb-4"></i>
+                        <h4 class="text-slate-300 font-semibold mb-1">Aucun File Search Store</h4>
+                        <p class="text-sm text-slate-500">Créez votre premier store ci-dessus pour y indexer des PDF historiques.</p>
+                    </div>
+                </template>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <template x-for="store in stores" :key="store.name">
+                        <div class="bg-goree-surface border border-goree-border hover:border-goree-gold/40 rounded-2xl p-6 transition-all shadow-lg shadow-black/20">
+                            <!-- Store Header -->
+                            <div class="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-white/5 gap-4">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-goree-card border border-white/10 flex items-center justify-center text-goree-gold shrink-0">
+                                        <i data-lucide="folder" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-3">
+                                            <h3 class="text-lg font-bold text-white font-display" x-text="store.display_name"></h3>
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-goree-gold/10 text-goree-gold border border-goree-gold/20" x-text="`${store.docs_count} doc(s)`"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-1.5">
+                                            <code class="text-xs bg-goree-bg px-2 py-0.5 rounded text-slate-400 select-all" x-text="store.name"></code>
+                                            <button @click="copyToClipboard(store.name)" title="Copier pour SQLite (nom_store_rag)" class="text-slate-400 hover:text-goree-gold text-xs transition-colors">
+                                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3">
+                                    <button @click="deleteStore(store.name, store.display_name)" class="px-3.5 py-2 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-all flex items-center gap-1.5">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i> Supprimer Store
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Documents and Upload Section -->
+                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-5">
+                                <!-- Documents List -->
+                                <div class="lg:col-span-7 space-y-3">
+                                    <h4 class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Documents Indexés dans ce Store</h4>
+                                    
+                                    <template x-if="store.docs.length === 0">
+                                        <p class="text-xs text-slate-500 italic py-2">Aucun document indexé pour le moment.</p>
+                                    </template>
+
+                                    <div class="space-y-2">
+                                        <template x-for="doc in store.docs" :key="doc.name">
+                                            <div class="flex items-center justify-between p-3 rounded-xl bg-goree-bg/60 border border-white/5 hover:border-white/10 transition-all">
+                                                <div class="flex items-center gap-3 min-w-0">
+                                                    <i data-lucide="file-text" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-medium text-white truncate" x-text="doc.display_name"></p>
+                                                        <span class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider" x-text="`● ${doc.state}`"></span>
+                                                    </div>
+                                                </div>
+                                                <button @click="deleteDocument(doc.name)" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all">
+                                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Drag & Drop Upload Zone -->
+                                <div class="lg:col-span-5">
+                                    <h4 class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Ajouter un document PDF</h4>
+                                    <div class="border-2 border-dashed border-white/10 hover:border-goree-gold/50 rounded-xl p-6 text-center bg-goree-bg/30 transition-all">
+                                        <i data-lucide="upload-cloud" class="w-8 h-8 text-goree-gold mx-auto mb-2 opacity-80"></i>
+                                        <p class="text-xs text-slate-300 font-medium mb-1">Sélectionner un fichier PDF</p>
+                                        <p class="text-[11px] text-slate-500 mb-4">Google effectuera l'indexation et les embeddings</p>
+                                        
+                                        <input type="file" accept=".pdf" :id="`file_${store.name}`" class="hidden" @change="uploadFile(store.name, $event)">
+                                        <label :for="`file_${store.name}`" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all">
+                                            <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Parcourir mes fichiers
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2 : RAG PLAYGROUND (BAC À SABLE DE TEST) -->
+        <div x-show="currentTab === 'playground'" class="space-y-6 max-w-4xl mx-auto">
+            <div class="bg-goree-surface border border-goree-border rounded-2xl p-8">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-goree-gold/10 border border-goree-gold/20 flex items-center justify-center text-goree-gold">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white font-display">Bac à sable de Test RAG — Guide IA Gorée</h2>
+                        <p class="text-xs text-slate-400">Comportement strict calqué sur l'application mobile (Règles BNF4 de refus hors contexte et adaptation de profil).</p>
+                    </div>
+                </div>
+
+                <form @submit.prevent="runPlaygroundTest()" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Store Documentaire</label>
+                            <select x-model="selectedPlaygroundStore" required class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-goree-gold/60">
+                                <option value="">-- Choisir un store --</option>
+                                <template x-for="s in stores" :key="s.name">
+                                    <option :value="s.name" x-text="`${s.display_name} (${s.docs_count} docs)`"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Profil du Visiteur</label>
+                            <select x-model="selectedProfil" class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-goree-gold/60">
+                                <option value="touriste">Touriste (Récit équilibré)</option>
+                                <option value="eleve">Élève (Simple & Pédagogique)</option>
+                                <option value="universitaire">Universitaire (Académique & Critique)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Langue</label>
+                            <select x-model="selectedLangue" class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-goree-gold/60">
+                                <option value="fr">🇫🇷 Français</option>
+                                <option value="en">🇬🇧 English</option>
+                                <option value="wo">🇸🇳 Wolof</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Question du visiteur</label>
+                        <textarea x-model="playgroundQuestion" rows="3" required placeholder="ex: Quelle est l'histoire de la porte du voyage sans retour ?" 
+                            class="w-full bg-goree-bg border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-goree-gold/60 placeholder-slate-500"></textarea>
+                    </div>
+
+                    <button type="submit" :disabled="playgroundLoading" class="w-full bg-goree-gold hover:bg-goree-goldHover text-goree-bg font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4" :class="playgroundLoading ? 'animate-bounce' : ''"></i>
+                        <span x-text="playgroundLoading ? 'Interrogation du RAG en cours...' : 'Tester la réponse de l\'Agent IA (Règles BNF4)'"></span>
+                    </button>
+                </form>
+
+                <!-- Zone de Réponse -->
+                <template x-if="playgroundAnswer">
+                    <div class="mt-8 pt-6 border-t border-white/10 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs uppercase tracking-wider text-goree-gold font-semibold flex items-center gap-2">
+                                <i data-lucide="bot" class="w-4 h-4"></i> Réponse de l'Agent IA Gorée AR :
+                            </h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium" x-text="`Profil : ${selectedProfil}`"></span>
+                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium" x-text="`Langue : ${selectedLangue.toUpperCase()}`"></span>
+                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium" x-text="`Modèle : ${playgroundModel}`"></span>
+                            </div>
+                        </div>
+                        <div class="p-5 rounded-xl bg-goree-bg/80 border border-white/10 text-slate-200 text-sm leading-relaxed whitespace-pre-line shadow-inner" x-text="playgroundAnswer"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 bg-goree-card border border-goree-gold/40 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3">
+        <i data-lucide="check-circle" class="w-5 h-5 text-goree-gold"></i>
+        <span class="text-sm font-medium" x-text="toast.message"></span>
+    </div>
+</body>
+</html>
