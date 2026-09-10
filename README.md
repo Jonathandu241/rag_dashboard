@@ -52,18 +52,18 @@ la colonne `nom_store_rag` de la table `Site` de la base SQLite de l'app mobile.
 
 ## Fonctionnalités
 
-- **Corpus & Stores** — créer / supprimer des *File Search Stores*, un par monument ou salle
+- **Corpus & Stores** - créer / supprimer des *File Search Stores*, un par monument ou salle
   de musée ; copier l'identifiant technique en un clic ; upload de PDF (indexation Google
   synchrone) ; liste paginée (2 stores, puis « Voir tous les stores »).
-- **Documents** — vue transverse de tous les documents, groupée par store en sections
+- **Documents** - vue transverse de tous les documents, groupée par store en sections
   repliables ; taille, date, état d'indexation ; **visualiser** le PDF source, **supprimer**.
-- **Bac à sable (Test IA)** — interroger un store en direct avec le prompt système strict
+- **Bac à sable (Test IA)** - interroger un store en direct avec le prompt système strict
   **BNF4** (refus hors périmètre, adaptation au profil visiteur, trilingue FR/EN/WO), avec
   un appel REST 1:1 identique à celui de l'app mobile.
-- **Aide** — rappel des conventions du projet.
-- **Authentification** — connexion obligatoire par comptes administrateurs (mots de passe
+- **Aide** - rappel des conventions du projet.
+- **Authentification** - connexion obligatoire par comptes administrateurs (mots de passe
   bcrypt, session par cookie signé).
-- **Archivage Supabase** — chaque PDF envoyé à Google est aussi copié dans un bucket privé,
+- **Archivage Supabase** - chaque PDF envoyé à Google est aussi copié dans un bucket privé,
   ce qui permet de le rouvrir (Google ne restitue pas les fichiers indexés).
 
 ---
@@ -76,7 +76,7 @@ la colonne `nom_store_rag` de la table `Site` de la base SQLite de l'app mobile.
 | Backend | FastAPI + Uvicorn (ASGI) |
 | Templates | Jinja2 |
 | Frontend | HTML5, Tailwind CSS (CDN, config inline), Alpine.js, Lucide Icons |
-| RAG | Google GenAI — Gemini **File Search Tool** (chunking, embeddings, indexation, retrieval côté Google) |
+| RAG | Google GenAI - Gemini **File Search Tool** (chunking, embeddings, indexation, retrieval côté Google) |
 | Modèle par défaut | `gemini-3.5-flash-lite` |
 | Stockage fichiers + comptes | Supabase (bucket privé + Postgres) |
 | Auth | `bcrypt` (hash) + `itsdangerous` (SessionMiddleware Starlette) |
@@ -119,7 +119,7 @@ GEMINI_API_KEY=AQ.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # --- Supabase (archivage PDF + comptes admin) ---
 SUPABASE_URL=https://<ref>.supabase.co
-SUPABASE_SERVICE_KEY=<clé service_role — Settings > API du projet Supabase>
+SUPABASE_SERVICE_KEY=<clé service_role, onglet Settings puis API du projet Supabase>
 
 # --- Session ---
 SESSION_SECRET=<chaîne aléatoire longue>        # ex : python -c "import secrets;print(secrets.token_urlsafe(48))"
@@ -231,21 +231,21 @@ Ouvrir <http://localhost:8000> → redirection vers `/login`.
 `app.py` est un back-office FastAPI mono-fichier. Deux chemins vers Google, volontairement
 distincts :
 
-1. **Gestion des stores / documents** — SDK officiel `google-genai`
+1. **Gestion des stores / documents** - SDK officiel `google-genai`
    (`client.file_search_stores.*`). L'upload attend la fin de l'opération longue de Google
    avant de répondre. `documents.delete` nécessite `config={"force": True}`.
-2. **Bac à sable** (`/api/playground/test`) — appel REST brut (`urllib.request`) vers
+2. **Bac à sable** (`/api/playground/test`) - appel REST brut (`urllib.request`) vers
    `v1beta/models/{model}:generateContent`, identique à la requête `UnityWebRequest` de
    l'app mobile. Une liste de modèles est essayée dans l'ordre.
 
 `construire_prompt_systeme(profil, langue)` génère le prompt système BNF4 ; il est le
-portage direct de `GestionnaireContexte.cs` de l'app Unity — garder les deux alignés.
+portage direct de `GestionnaireContexte.cs` de l'app Unity - garder les deux alignés.
 
 **Authentification** : le middleware `require_login` bloque toute route hors `/login`,
 `/logout`, `/static/*`, `/favicon.ico` sans session (302 pour les pages, 401 JSON pour
 `/api/*`). Il est enregistré **avant** `SessionMiddleware` pour s'exécuter **après** lui.
 
-**Frontend** : une seule page (`templates/index.html`) en coque dashboard — sidebar
+**Frontend** : une seule page (`templates/index.html`) en coque dashboard - sidebar
 gauche (Corpus / Documents / Bac à sable / Aide), topbar collante avec le nom de
 l'utilisateur et le bouton de déconnexion, tiroir mobile sous 1024 px. Toute l'interactivité
 tient dans un composant Alpine.js `ragApp()` (`static/js/app.js`). Thème sombre uniquement,
