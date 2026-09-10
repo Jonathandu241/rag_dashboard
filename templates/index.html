@@ -240,7 +240,77 @@
 
           <!-- VUE : TEST  (tâche 7) -->
           <div x-show="currentTab === 'test'" class="space-y-6" style="display:none">
-            <p class="text-muted text-sm">Contenu Test — mis en place tâche 7.</p>
+
+            <div>
+              <h2 class="font-display text-xl text-ink">Test du guide</h2>
+              <p class="prose-help text-[13px] text-muted mt-1">
+                Reproduit le comportement de l'application mobile : ancrage strict sur le fonds
+                choisi, refus poli hors périmètre (règle BNF4), adaptation au profil du visiteur.
+              </p>
+            </div>
+
+            <form @submit.prevent="runPlaygroundTest()" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-[13px] text-muted mb-1.5">Fonds</label>
+                  <select x-model="selectedPlaygroundStore" required
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 focus:outline-none focus:border-accent">
+                    <option value="">Choisir un fonds</option>
+                    <template x-for="s in stores" :key="s.name">
+                      <option :value="s.name" x-text="`${s.display_name} (${s.docs_count})`"></option>
+                    </template>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[13px] text-muted mb-1.5">Profil</label>
+                  <select x-model="selectedProfil"
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 focus:outline-none focus:border-accent">
+                    <option value="touriste">Touriste</option>
+                    <option value="eleve">Élève</option>
+                    <option value="universitaire">Universitaire</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[13px] text-muted mb-1.5">Langue</label>
+                  <select x-model="selectedLangue"
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 focus:outline-none focus:border-accent">
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                    <option value="wo">Wolof</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[13px] text-muted mb-1.5">Question du visiteur</label>
+                <textarea x-model="playgroundQuestion" rows="3" required
+                          placeholder="Quelle est l'histoire de la porte du voyage sans retour ?"
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 placeholder-muted/60 focus:outline-none focus:border-accent"></textarea>
+              </div>
+
+              <button type="submit" :disabled="playgroundLoading"
+                      class="bg-accent hover:bg-accent-hover text-bg font-medium text-sm
+                             px-4 py-2 rounded-sm transition-colors disabled:opacity-50">
+                <span x-text="playgroundLoading ? 'Recherche en cours…' : 'Envoyer la question'"></span>
+              </button>
+            </form>
+
+            <template x-if="playgroundAnswer">
+              <div class="pt-5 border-t border-line space-y-3">
+                <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <span class="text-[13px] text-muted">Réponse</span>
+                  <span class="text-[12px] text-muted" x-text="`profil : ${selectedProfil}`"></span>
+                  <span class="text-[12px] text-muted" x-text="`langue : ${selectedLangue}`"></span>
+                  <span class="text-[12px] text-muted" x-text="`modèle : ${playgroundModel}`"></span>
+                </div>
+                <div class="bg-surface border border-line rounded-sm p-4 text-sm text-ink
+                            leading-relaxed whitespace-pre-line" x-text="playgroundAnswer"></div>
+              </div>
+            </template>
           </div>
 
           <!-- VUE : AIDE  (tâche 8) -->
