@@ -1,6 +1,8 @@
 function ragApp() {
     return {
         currentTab: 'corpus',
+        sidebarOpen: false,
+        theme: 'light',
         stores: [],
         stats: { total_stores: 0, total_docs: 0 },
         newStoreName: '',
@@ -15,8 +17,33 @@ function ragApp() {
         toast: { show: false, message: '' },
 
         init() {
+            // Thème : lu depuis localStorage, appliqué à <html>
+            try {
+                this.theme = localStorage.getItem('goree-theme') || 'light';
+            } catch (e) {
+                this.theme = 'light';
+            }
+            this.applyTheme();
             this.fetchStores();
             this.$nextTick(() => lucide.createIcons());
+        },
+
+        applyTheme() {
+            document.documentElement.classList.toggle('dark', this.theme === 'dark');
+        },
+
+        toggleTheme() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            try {
+                localStorage.setItem('goree-theme', this.theme);
+            } catch (e) { /* stockage indisponible : la bascule reste valable pour la session */ }
+            this.applyTheme();
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        goTo(tab) {
+            this.currentTab = tab;
+            this.sidebarOpen = false;
         },
 
         showToast(msg) {
@@ -49,7 +76,7 @@ function ragApp() {
                 const res = await fetch('/api/stores/create', { method: 'POST', body: fd });
                 if (res.ok) {
                     this.newStoreName = '';
-                    this.showToast("Store créé avec succès !");
+                    this.showToast("Fonds créé.");
                     await this.fetchStores();
                 }
             } catch (e) {
@@ -66,7 +93,7 @@ function ragApp() {
             this.loading = true;
             try {
                 await fetch('/api/stores/delete', { method: 'POST', body: fd });
-                this.showToast("Store supprimé.");
+                this.showToast("Fonds supprimé.");
                 await this.fetchStores();
             } catch (e) {
                 alert("Erreur suppression: " + e.message);
