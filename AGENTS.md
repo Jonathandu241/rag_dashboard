@@ -35,7 +35,7 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 - **Moteur de Templates :** Jinja2
 - **Frontend & UI :** HTML5, Tailwind CSS (via CDN, config inline), Alpine.js, Lucide Icons
 - **Design System :** Charte graphique « Gorée AR » — **coque dashboard** (sidebar gauche
-  Corpus / Bac à sable / Aide + topbar collante), **thème sombre uniquement**
+  Corpus / Documents / Bac à sable / Aide + topbar collante), **thème sombre uniquement**
   (`<html class="dark">`, pas de bascule). Namespace de couleurs `goree-*` : fond
   `#0B0D17`, surface `#13172B`, card `#1B203B`, bordure `rgba(232,200,74,.15)`, or
   `#E8C84A` / hover `#F4D665`, accent bleu `#3B82F6`. Dégradés radiaux or/bleu sur le
@@ -43,20 +43,26 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
   avec ombres colorées (`shadow-amber-500/10`), or utilisé librement, icônes Lucide
   partout, drapeaux emoji dans le sélecteur de langue, point vert pulsant « API
   Connectée ». Typographies : *Marcellus* (titres) et *Plus Jakarta Sans* (corps).
-- **SDK & API Cloud :** 
+- **SDK & API Cloud :**
   - SDK officiel `google-genai` pour la gestion des `file_search_stores` (création, upload de PDF, suppression)
   - Requêtes HTTP REST directes (`urllib.request` ou `requests`) vers l'endpoint v1beta `generateContent` pour le bac à sable de test (garantissant un alignement 1:1 avec les appels `UnityWebRequest` de l'application mobile)
+  - `supabase` (client `service_role`) pour l'archivage des PDF sources : bucket privé
+    `corpus-pdfs` + table `public.corpus_documents` (projet `GoreeAR`). Optionnel —
+    si `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` absents du `.env`, l'archivage et le
+    bouton « Visualiser » sont simplement désactivés.
 - **Modèle IA par défaut :** `gemini-3.5-flash-lite` (ultra-rapide < 2s, économique en tokens, support complet du File Search Tool)
 
 ---
 
 ## 3. Règles de Sécurité et Clé API — Strictes
 
-1. **Jamais de clé API en dur dans le code source** :
-   - La clé API Gemini est chargée depuis la variable d'environnement `GEMINI_API_KEY` via `python-dotenv`.
-   - Le fichier `.env` doit **toujours** être présent localement mais **exclu de tout versionnement Git** (`.gitignore`).
+1. **Jamais de clé/secret en dur dans le code source** :
+   - `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` sont chargés depuis `.env` via `python-dotenv`.
+   - Le fichier `.env` doit **toujours** être présent localement mais **exclu de tout versionnement Git** (`.gitignore`, ainsi que `uploads/`).
+   - `SUPABASE_SERVICE_KEY` est la clé `service_role` (bypass RLS) : elle ne quitte jamais le backend, jamais exposée au navigateur ni au template.
 2. **Affichage sécurisé sur l'interface** :
-   - L'interface web ne doit jamais afficher la clé en clair (masquage obligatoire : `AQ...wdyg`).
+   - L'interface web ne doit jamais afficher la clé Gemini en clair (masquage obligatoire : `AQ...wdyg`). Aucune clé Supabase n'est transmise au front.
+   - Le bucket `corpus-pdfs` est **privé** : la visualisation d'un PDF passe par une URL signée (expiration 1 h) générée côté serveur, jamais par un lien public.
 
 ---
 

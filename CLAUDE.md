@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `AGENTS.md` holds the firm project conventions (stack, security, RAG store granularity, BNF4 requirements, trilingual support). Read it and follow it. This file only adds architecture context and commands not covered there.
 
 Key constraints from `AGENTS.md` worth repeating:
-- Never hardcode an API key. `GEMINI_API_KEY` is loaded from `.env` via `python-dotenv`; `.env` must never be committed.
+- Never hardcode an API key. `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` are loaded from `.env` via `python-dotenv`; `.env` must never be committed.
 - One File Search Store per monument / museum room (strict compartmentalization). Store display names follow `goree-<lieu>` (e.g. `goree-maison-esclaves`).
 - Always pass `config={"display_name": file.filename}` on upload so Google doesn't name the doc after the temp file.
 - The playground system prompt must enforce BNF4: refuse politely anything outside Gorée / the transatlantic slave trade; adapt tone to profile (`touriste` / `eleve` / `universitaire`); support `fr` / `en` / `wo`.
@@ -28,15 +28,25 @@ There is no test suite, linter, or build step. `test_call.py` is a manual diagno
 
 ## Architecture
 
-Single-file FastAPI back-office (`app.py`, ~300 lines) that administers Google's **Gemini File Search Tool** as the RAG backend — there is no local vector DB, no separate worker, no external infra. Google does the chunking, embedding, indexing, and retrieval.
+Single-file FastAPI back-office (`app.py`) that administers Google's **Gemini File Search Tool** as the RAG backend — Google does the chunking, embedding, indexing, and retrieval; there is no local vector DB or worker.
 
 Two distinct paths to Google, deliberately:
 
-1. **Store & document management** — uses the official `google-genai` SDK (`client.file_search_stores.*`). Covers list, create, delete stores and upload/delete documents. Upload is **synchronous**: `upload_to_file_search_store` returns a long-running operation and the handler polls `client.operations.get(operation)` every 1.5s until `operation.done` before responding. Uploaded file is written to a `NamedTemporaryFile`, sent, then deleted (also in the error path).
+1. **Store & document management** — uses the official `google-genai` SDK (`client.file_search_stores.*`). Covers list, create, delete stores and upload/delete documents. Upload is **synchronous**: `upload_to_file_search_store` returns a long-running operation and the handler polls `client.operations.get(operation)` every 1.5s until `operation.done` before responding. Uploaded file is written to a `NamedTemporaryFile`, sent, then deleted (also in the error path). `documents.delete` needs `config={"force": True}` (a document with chunks is "non-empty").
 
 2. **Playground / RAG query test** (`/api/playground/test`) — bypasses the SDK and does a raw `urllib.request` POST to the `v1beta/models/{model}:generateContent` REST endpoint. This is intentional: it mirrors 1:1 the `UnityWebRequest` calls the Gorée AR mobile app makes, so the back-office validates the exact same request shape. The handler tries a list of model names in order (`modeles` in `test_query`) and returns the first that yields text; if all fail it raises 500 with the last error. `file_search` is passed as a tool with `file_search_store_names`.
 
 `construire_prompt_systeme(profil, langue)` builds the strict BNF4 system prompt and is a direct port of `GestionnaireContexte.cs` from the Unity app — keep the two aligned when either changes.
+
+### Supabase — source-PDF storage (optional)
+
+Google File Search keeps chunks/embeddings but does **not** let you re-download the original PDF. To make the "Visualiser" button work, `app.py` keeps a copy of every uploaded PDF in Supabase:
+
+- **Bucket** `corpus-pdfs` (private) — one object per document at `<store_ref>/<uuid>.pdf`.
+- **Table** `public.corpus_documents` (project `GoreeAR`, `ubajzrbphbqoomtxoqsk`) — links `google_document_name` ↔ `storage_path` + `file_name`, `size_bytes`, `store_display_name`, `created_at`. RLS on, **no public policy**: only the backend touches it, with the `service_role` key.
+- `get_supabase()` returns `None` when `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` are absent → the copy step and the `has_local_file` flag are simply skipped (graceful degradation; docs indexed before this feature show `has_local_file: false`).
+- Upload writes to Google, then best-effort copies to the bucket + inserts the row. Delete (document or whole store) cleans the bucket and the table too.
+- `GET /api/documents/file?document_name=…` → 307 redirect to a 1 h signed URL. `/api/stores` docs carry `size_bytes`, `created_at`, `has_local_file`; stats carry `storage_enabled`.
 
 ### Frontend
 
@@ -49,12 +59,16 @@ gold accent used freely, `rounded-xl`/`rounded-2xl` cards with coloured glow sha
 Lucide icons throughout, flag emoji in the language select. Fonts: *Marcellus* (display /
 headings) + *Plus Jakarta Sans* (body).
 
-Layout is a dashboard shell: fixed left sidebar (Corpus / Test / Aide nav, active entry =
-gold pill), sticky topbar with the current view title. Below 1024px the sidebar collapses
-into a ☰ drawer with an overlay. All interactivity is one Alpine.js component, `ragApp()`
-in `static/js/app.js` — `currentTab` (`corpus` / `test` / `aide`), `sidebarOpen`, `goTo()`,
-plus the fetch calls to `/api/*`. Icons re-rendered via `lucide.createIcons()` after DOM
-updates. `static/js/tailwind.config.js` mirrors the inline config and must be kept in sync.
+Layout is a dashboard shell: fixed left sidebar (Corpus / Documents / Test / Aide nav, active
+entry = gold pill), sticky topbar with the current view title. Below 1024px the sidebar
+collapses into a ☰ drawer with an overlay. All interactivity is one Alpine.js component,
+`ragApp()` in `static/js/app.js` — `currentTab` (`corpus` / `documents` / `test` / `aide`),
+`sidebarOpen`, `goTo()`, `showAllStores` + `visibleStores` getter (Corpus shows 2 stores
+then a "Voir plus" toggle), `collapsedStores` + `toggleStoreSection()` (Documents view is
+grouped by store into collapsible sections), `formatBytes`/`formatDate`/`openDocument`
+helpers, plus the fetch calls to `/api/*`. `app.js` is loaded `defer` with a `?v=N`
+cache-buster — bump N when you change it. Icons re-rendered via `lucide.createIcons()` after
+DOM updates. `static/js/tailwind.config.js` mirrors the inline config and must be kept in sync.
 
 ### How this fits the larger system
 
@@ -65,3 +79,5 @@ This repo is the **back-office** half of Gorée AR. The **front-office** is a Un
 - App comments, prompts, and UI strings are in French — match that.
 - The model names in `test_query`'s `modeles` list and in `test_call.py` are the project's chosen defaults; leave them as-is unless asked to change model selection.
 - `get_client()` raises HTTP 400 (not 500) when `GEMINI_API_KEY` is missing — preserve that distinction.
+- On Windows, `python app.py` works (emoji were removed from the startup `print()`s). `python -m uvicorn app:app` also works.
+- Supabase project `GoreeAR` also hosts the **mobile app's** schema (`point_interet`, `routes`, `traduction`, …). The back-office only owns `corpus_documents` and the `corpus-pdfs` bucket — don't touch the rest.
