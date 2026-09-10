@@ -7,7 +7,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
     <!-- Tailwind & Alpine.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -40,13 +40,9 @@
         }
     </script>
     <style>
-        body {
-            background-color: #0B0D17;
-            background-image: 
-                radial-gradient(at 10% 20%, rgba(232, 200, 74, 0.05) 0px, transparent 50%),
-                radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
-        }
+      /* les tokens et le fond sont dans /static/css/app.css */
     </style>
+    <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body class="text-slate-100 font-sans min-h-screen flex flex-col antialiased" x-data="ragApp()" x-init="init()">
 
