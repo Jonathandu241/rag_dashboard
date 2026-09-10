@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gorée AR — RAG Studio & Corpus Manager</title>
+    <title>Gorée AR — Corpus documentaire</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -126,7 +126,7 @@
           <div x-show="currentTab === 'corpus'" class="space-y-10">
 
             <!-- KPI : 3 blocs plats séparés par filets verticaux -->
-            <div class="flex border border-line divide-x divide-line">
+            <div class="flex flex-col sm:flex-row border border-line divide-y sm:divide-y-0 sm:divide-x divide-line">
               <div class="flex-1 px-5 py-4">
                 <div class="font-display text-3xl text-ink" x-text="stats.total_stores">0</div>
                 <div class="text-[13px] text-muted mt-1">Fonds</div>
