@@ -23,6 +23,7 @@ function ragApp() {
         goTo(tab) {
             this.currentTab = tab;
             this.sidebarOpen = false;
+            this.$nextTick(() => lucide.createIcons());
         },
 
         showToast(msg) {

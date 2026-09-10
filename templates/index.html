@@ -8,12 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Composant Alpine : défini AVANT Alpine (defer garantit l'ordre) -->
+    <script defer src="/static/js/app.js?v=2"></script>
     <!-- Tailwind & Alpine.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/static/js/app.js"></script>
 
     <script>
         tailwind.config = {
@@ -69,21 +70,30 @@
 
             <!-- Navigation -->
             <nav class="flex-1 p-4 space-y-1.5">
-                <template x-for="item in [
-                        { id: 'corpus', label: 'Corpus & Stores', icon: 'folder-kanban' },
-                        { id: 'test',   label: 'Bac à sable (Test IA)', icon: 'sparkles' },
-                        { id: 'aide',   label: 'Aide & Conventions', icon: 'help-circle' }
-                    ]" :key="item.id">
-                    <button
-                        @click="goTo(item.id)"
-                        class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
-                        :class="currentTab === item.id
-                            ? 'bg-goree-gold text-goree-bg font-semibold shadow-md shadow-amber-500/10'
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'">
-                        <i :data-lucide="item.icon" class="w-4 h-4 shrink-0"></i>
-                        <span x-text="item.label"></span>
-                    </button>
-                </template>
+                <button @click="goTo('corpus')"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
+                    :class="currentTab === 'corpus'
+                        ? 'bg-goree-gold text-goree-bg font-semibold shadow-md shadow-amber-500/10'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'">
+                    <i data-lucide="folder-kanban" class="w-4 h-4 shrink-0"></i>
+                    <span>Corpus &amp; Stores</span>
+                </button>
+                <button @click="goTo('test')"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
+                    :class="currentTab === 'test'
+                        ? 'bg-goree-gold text-goree-bg font-semibold shadow-md shadow-amber-500/10'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'">
+                    <i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i>
+                    <span>Bac à sable (Test IA)</span>
+                </button>
+                <button @click="goTo('aide')"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
+                    :class="currentTab === 'aide'
+                        ? 'bg-goree-gold text-goree-bg font-semibold shadow-md shadow-amber-500/10'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'">
+                    <i data-lucide="help-circle" class="w-4 h-4 shrink-0"></i>
+                    <span>Aide &amp; Conventions</span>
+                </button>
             </nav>
 
             <!-- Pied de sidebar : indicateur clé API -->
