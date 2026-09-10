@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Composant Alpine : défini AVANT Alpine (defer garantit l'ordre) -->
-    <script defer src="/static/js/app.js?v=3"></script>
+    <script defer src="/static/js/app.js?v=4"></script>
     <!-- Tailwind & Alpine.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -279,8 +279,8 @@
                                                                 </div>
                                                             </div>
                                                             <div class="flex items-center gap-1 shrink-0">
-                                                                <button x-show="doc.has_local_file" @click="openDocument(doc.name)" title="Visualiser le PDF" class="text-slate-500 hover:text-goree-gold p-1.5 rounded-lg hover:bg-white/5 transition-all">
-                                                                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                                                                <button x-show="doc.has_local_file" @click="openPdf(doc.name, doc.display_name)" title="Feuilleter le PDF" class="text-slate-500 hover:text-goree-gold p-1.5 rounded-lg hover:bg-white/5 transition-all">
+                                                                    <i data-lucide="eye" class="w-4 h-4"></i>
                                                                 </button>
                                                                 <button @click="deleteDocument(doc.name)" title="Supprimer" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all">
                                                                     <i data-lucide="x" class="w-4 h-4"></i>
@@ -381,9 +381,9 @@
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-1 shrink-0">
-                                                    <button x-show="doc.has_local_file" @click="openDocument(doc.name)" title="Visualiser le PDF"
+                                                    <button x-show="doc.has_local_file" @click="openPdf(doc.name, doc.display_name)" title="Feuilleter le PDF"
                                                         class="text-xs font-medium text-goree-gold border border-goree-gold/30 hover:bg-goree-gold/10 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
-                                                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Voir
+                                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> Feuilleter
                                                     </button>
                                                     <span x-show="!doc.has_local_file" title="Copie locale indisponible (document indexé avant l'activation du stockage)"
                                                         class="text-[11px] text-slate-600 px-2">non archivé</span>
@@ -544,6 +544,30 @@
 
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Modale : lecteur PDF -->
+    <div x-show="pdf.open" x-transition.opacity
+         @keydown.escape.window="closePdf()"
+         class="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-8 bg-black/70 backdrop-blur-sm"
+         style="display:none">
+        <div @click.outside="closePdf()"
+             class="w-full max-w-5xl h-full max-h-[90vh] bg-goree-surface border border-goree-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <!-- En-tête -->
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-goree-border shrink-0">
+                <i data-lucide="file-text" class="w-5 h-5 text-goree-gold shrink-0"></i>
+                <h3 class="font-display text-white text-base truncate flex-1" x-text="pdf.title"></h3>
+                <a :href="pdf.url" target="_blank" rel="noopener"
+                   class="text-slate-400 hover:text-goree-gold p-1.5 rounded-lg hover:bg-white/5 transition-all" title="Ouvrir dans un onglet">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                </a>
+                <button @click="closePdf()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-all" title="Fermer (Échap)">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Visionneuse -->
+            <iframe x-show="pdf.open" :src="pdf.url" class="flex-1 w-full bg-goree-bg" title="Aperçu du document"></iframe>
         </div>
     </div>
 

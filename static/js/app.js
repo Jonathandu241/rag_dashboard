@@ -16,6 +16,7 @@ function ragApp() {
         playgroundModel: '',
         playgroundLoading: false,
         toast: { show: false, message: '' },
+        pdf: { open: false, url: '', title: '' },
 
         init() {
             this.fetchStores();
@@ -56,8 +57,25 @@ function ragApp() {
                 return '';
             }
         },
+        _docFileUrl(docName) {
+            return '/api/documents/file?document_name=' + encodeURIComponent(docName);
+        },
+
+        // Ouvre le PDF dans une modale (iframe), sans quitter le dashboard
+        openPdf(docName, title) {
+            this.pdf.url = this._docFileUrl(docName);
+            this.pdf.title = title || 'Document';
+            this.pdf.open = true;
+            document.body.style.overflow = 'hidden';
+        },
+        closePdf() {
+            this.pdf.open = false;
+            this.pdf.url = '';
+            document.body.style.overflow = '';
+        },
+        // Repli : ouvrir dans un onglet séparé
         openDocument(docName) {
-            window.open('/api/documents/file?document_name=' + encodeURIComponent(docName), '_blank', 'noopener');
+            window.open(this._docFileUrl(docName), '_blank', 'noopener');
         },
 
         showToast(msg) {
