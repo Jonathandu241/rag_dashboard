@@ -3,9 +3,11 @@ function ragApp() {
         currentTab: 'corpus',
         sidebarOpen: false,
         stores: [],
-        stats: { total_stores: 0, total_docs: 0 },
+        stats: { total_stores: 0, total_docs: 0, storage_enabled: false },
         newStoreName: '',
         loading: false,
+        showAllStores: false,
+        collapsedStores: {},
         selectedPlaygroundStore: '',
         selectedProfil: 'touriste',
         selectedLangue: 'fr',
@@ -24,6 +26,38 @@ function ragApp() {
             this.currentTab = tab;
             this.sidebarOpen = false;
             this.$nextTick(() => lucide.createIcons());
+        },
+
+        // --- Vue Corpus : pagination des stores ---
+        get visibleStores() {
+            return this.showAllStores ? this.stores : this.stores.slice(0, 2);
+        },
+
+        // --- Vue Documents : repliage des sections ---
+        toggleStoreSection(storeName) {
+            this.collapsedStores[storeName] = !this.collapsedStores[storeName];
+        },
+        isCollapsed(storeName) {
+            return !!this.collapsedStores[storeName];
+        },
+
+        // --- Helpers ---
+        formatBytes(n) {
+            if (n === null || n === undefined) return '—';
+            if (n < 1024) return n + ' o';
+            if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' Ko';
+            return (n / (1024 * 1024)).toFixed(1) + ' Mo';
+        },
+        formatDate(iso) {
+            if (!iso) return '';
+            try {
+                return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch (e) {
+                return '';
+            }
+        },
+        openDocument(docName) {
+            window.open('/api/documents/file?document_name=' + encodeURIComponent(docName), '_blank', 'noopener');
         },
 
         showToast(msg) {

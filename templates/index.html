@@ -78,6 +78,14 @@
                     <i data-lucide="folder-kanban" class="w-4 h-4 shrink-0"></i>
                     <span>Corpus &amp; Stores</span>
                 </button>
+                <button @click="goTo('documents')"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
+                    :class="currentTab === 'documents'
+                        ? 'bg-goree-gold text-goree-bg font-semibold shadow-md shadow-amber-500/10'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'">
+                    <i data-lucide="files" class="w-4 h-4 shrink-0"></i>
+                    <span>Documents</span>
+                </button>
                 <button @click="goTo('test')"
                     class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
                     :class="currentTab === 'test'
@@ -124,7 +132,7 @@
                 </button>
                 <div class="min-w-0">
                     <h2 class="font-display text-xl tracking-wide text-white truncate"
-                        x-text="{ corpus: 'Gestionnaire de Corpus Documentaire', test: 'Bac à sable de Test RAG', aide: 'Aide & Conventions du Projet' }[currentTab]"></h2>
+                        x-text="{ corpus: 'Gestionnaire de Corpus Documentaire', documents: 'Documents Indexés', test: 'Bac à sable de Test RAG', aide: 'Aide & Conventions du Projet' }[currentTab]"></h2>
                     <p class="text-xs text-slate-400 truncate">Gemini File Search Tool • Back-Office Gorée AR</p>
                 </div>
             </header>
@@ -208,7 +216,7 @@
                             </template>
 
                             <div class="grid grid-cols-1 gap-6">
-                                <template x-for="store in stores" :key="store.name">
+                                <template x-for="store in visibleStores" :key="store.name">
                                     <div class="bg-goree-surface border border-goree-border hover:border-goree-gold/40 rounded-2xl p-6 transition-all shadow-lg shadow-black/20">
                                         <!-- Store Header -->
                                         <div class="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-white/5 gap-4">
@@ -249,7 +257,7 @@
 
                                                 <div class="space-y-2">
                                                     <template x-for="doc in store.docs" :key="doc.name">
-                                                        <div class="flex items-center justify-between p-3 rounded-xl bg-goree-bg/60 border border-white/5 hover:border-white/10 transition-all">
+                                                        <div class="flex items-center justify-between p-3 rounded-xl bg-goree-bg/60 border border-white/5 hover:border-white/10 transition-all gap-2">
                                                             <div class="flex items-center gap-3 min-w-0">
                                                                 <i data-lucide="file-text" class="w-5 h-5 text-amber-400 shrink-0"></i>
                                                                 <div class="min-w-0">
@@ -257,9 +265,14 @@
                                                                     <span class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider" x-text="`● ${doc.state}`"></span>
                                                                 </div>
                                                             </div>
-                                                            <button @click="deleteDocument(doc.name)" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all">
-                                                                <i data-lucide="x" class="w-4 h-4"></i>
-                                                            </button>
+                                                            <div class="flex items-center gap-1 shrink-0">
+                                                                <button x-show="doc.has_local_file" @click="openDocument(doc.name)" title="Visualiser le PDF" class="text-slate-500 hover:text-goree-gold p-1.5 rounded-lg hover:bg-white/5 transition-all">
+                                                                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                                                                </button>
+                                                                <button @click="deleteDocument(doc.name)" title="Supprimer" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all">
+                                                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </template>
                                                 </div>
@@ -283,6 +296,94 @@
                                     </div>
                                 </template>
                             </div>
+
+                            <!-- Bouton Voir plus / Voir moins -->
+                            <div x-show="stores.length > 2" class="flex justify-center pt-2">
+                                <button @click="showAllStores = !showAllStores; $nextTick(() => lucide.createIcons())"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-goree-gold border border-goree-gold/30 bg-goree-gold/5 hover:bg-goree-gold/10 transition-all">
+                                    <template x-if="!showAllStores">
+                                        <span class="inline-flex items-center gap-2">
+                                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                            <span x-text="`Voir tous les stores (${stores.length})`"></span>
+                                        </span>
+                                    </template>
+                                    <template x-if="showAllStores">
+                                        <span class="inline-flex items-center gap-2">
+                                            <i data-lucide="chevron-up" class="w-4 h-4"></i> Voir moins
+                                        </span>
+                                    </template>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══════════ VUE : DOCUMENTS (par store, repliable) ══════════ -->
+                    <div x-show="currentTab === 'documents'" class="space-y-6" style="display:none">
+
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-slate-400">
+                                <span x-text="stats.total_docs"></span> document(s) indexé(s) dans
+                                <span x-text="stats.total_stores"></span> store(s).
+                            </p>
+                            <button @click="fetchStores()" class="text-xs text-slate-400 hover:text-goree-gold flex items-center gap-1.5 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''"></i> Actualiser
+                            </button>
+                        </div>
+
+                        <template x-if="stats.total_docs === 0">
+                            <div class="bg-goree-surface/50 border border-dashed border-white/10 rounded-2xl p-12 text-center">
+                                <i data-lucide="file-x" class="w-12 h-12 text-slate-500 mx-auto mb-4"></i>
+                                <h4 class="text-slate-300 font-semibold mb-1">Aucun document indexé</h4>
+                                <p class="text-sm text-slate-500">Ajoutez des PDF depuis la vue Corpus &amp; Stores.</p>
+                            </div>
+                        </template>
+
+                        <div class="space-y-4">
+                            <template x-for="store in stores" :key="store.name">
+                                <div x-show="store.docs.length > 0" class="bg-goree-surface border border-goree-border rounded-2xl overflow-hidden">
+                                    <!-- En-tête de section repliable -->
+                                    <button @click="toggleStoreSection(store.name)"
+                                        class="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-all">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <i data-lucide="folder" class="w-5 h-5 text-goree-gold shrink-0"></i>
+                                            <h3 class="text-base font-bold text-white font-display truncate" x-text="store.display_name"></h3>
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-goree-gold/10 text-goree-gold border border-goree-gold/20 shrink-0" x-text="`${store.docs_count} doc(s)`"></span>
+                                        </div>
+                                        <i :data-lucide="isCollapsed(store.name) ? 'chevron-down' : 'chevron-up'" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                                    </button>
+
+                                    <!-- Liste des documents -->
+                                    <div x-show="!isCollapsed(store.name)" class="px-5 pb-5 space-y-2 border-t border-white/5 pt-4">
+                                        <template x-for="doc in store.docs" :key="doc.name">
+                                            <div class="flex items-center justify-between p-3 rounded-xl bg-goree-bg/60 border border-white/5 hover:border-white/10 transition-all gap-3">
+                                                <div class="flex items-center gap-3 min-w-0">
+                                                    <i data-lucide="file-text" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-medium text-white truncate" x-text="doc.display_name"></p>
+                                                        <p class="text-[11px] text-slate-500 flex items-center gap-2">
+                                                            <span class="text-emerald-400 font-semibold uppercase tracking-wider" x-text="`● ${doc.state}`"></span>
+                                                            <span x-show="doc.size_bytes" x-text="formatBytes(doc.size_bytes)"></span>
+                                                            <span x-show="doc.created_at" x-text="formatDate(doc.created_at)"></span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <button x-show="doc.has_local_file" @click="openDocument(doc.name)" title="Visualiser le PDF"
+                                                        class="text-xs font-medium text-goree-gold border border-goree-gold/30 hover:bg-goree-gold/10 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                                                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Voir
+                                                    </button>
+                                                    <span x-show="!doc.has_local_file" title="Copie locale indisponible (document indexé avant l'activation du stockage)"
+                                                        class="text-[11px] text-slate-600 px-2">non archivé</span>
+                                                    <button @click="deleteDocument(doc.name)" title="Supprimer"
+                                                        class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all">
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
