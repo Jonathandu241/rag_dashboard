@@ -47,7 +47,7 @@ _supabase = None
 
 
 def get_supabase():
-    """Client Supabase (service_role). None si non configuré — la copie des PDF
+    """Client Supabase (service_role). None si non configuré - la copie des PDF
     et la visualisation sont alors simplement désactivées (dégradation gracieuse)."""
     global _supabase
     if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
@@ -60,14 +60,14 @@ def get_supabase():
 
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_KEY)
 
-app = FastAPI(title="Gorée AR — RAG Studio")
+app = FastAPI(title="Gorée AR - RAG Studio")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
 @app.middleware("http")
 async def require_login(request: Request, call_next):
-    """Refuse toute requête si la session ne porte pas d'utilisateur —
+    """Refuse toute requête si la session ne porte pas d'utilisateur :
     redirection vers /login pour les pages, 401 JSON pour /api/*.
     Enregistré AVANT SessionMiddleware pour qu'il s'exécute APRÈS lui
     (Starlette exécute les middlewares dans l'ordre inverse de l'ajout)."""

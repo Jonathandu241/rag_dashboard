@@ -1,5 +1,5 @@
 // Miroir de la config Tailwind inline de templates/index.html (non chargé par la page,
-// gardé cohérent — cf. AGENTS.md §6). Toute modif ici doit être répercutée dans le <head>.
+// gardé cohérent - cf. AGENTS.md §6). Toute modif ici doit être répercutée dans le <head>.
 tailwind.config = {
     darkMode: 'class',
     theme: {

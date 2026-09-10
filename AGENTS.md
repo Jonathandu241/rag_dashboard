@@ -1,7 +1,7 @@
-# AGENTS.md — Règles pour l'agent IA (Gorée AR — RAG Studio & Back-Office)
+# AGENTS.md - Règles pour l'agent IA (Gorée AR - RAG Studio & Back-Office)
 
 > Ce document définit les règles **fermes** et les conventions techniques que tout agent IA
-> doit respecter lors de l'intervention sur le projet **Gorée AR — RAG Studio** (Back-Office d'administration).
+> doit respecter lors de l'intervention sur le projet **Gorée AR - RAG Studio** (Back-Office d'administration).
 > Ce projet s'inscrit dans un mémoire de Master 2 en Informatique de Gestion (UCAO-ISG).
 
 ---
@@ -34,7 +34,7 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 - **Framework Web Backend :** FastAPI + Uvicorn (ASGI)
 - **Moteur de Templates :** Jinja2
 - **Frontend & UI :** HTML5, Tailwind CSS (via CDN, config inline), Alpine.js, Lucide Icons
-- **Design System :** Charte graphique « Gorée AR » — **coque dashboard** (sidebar gauche
+- **Design System :** Charte graphique « Gorée AR » - **coque dashboard** (sidebar gauche
   Corpus / Documents / Bac à sable / Aide + topbar collante), **thème sombre uniquement**
   (`<html class="dark">`, pas de bascule). Namespace de couleurs `goree-*` : fond
   `#0B0D17`, surface `#13172B`, card `#1B203B`, bordure `rgba(232,200,74,.15)`, or
@@ -47,14 +47,13 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
   - SDK officiel `google-genai` pour la gestion des `file_search_stores` (création, upload de PDF, suppression)
   - Requêtes HTTP REST directes (`urllib.request` ou `requests`) vers l'endpoint v1beta `generateContent` pour le bac à sable de test (garantissant un alignement 1:1 avec les appels `UnityWebRequest` de l'application mobile)
   - `supabase` (client `service_role`) pour l'archivage des PDF sources : bucket privé
-    `corpus-pdfs` + table `public.corpus_documents` (projet `GoreeAR`). Optionnel —
-    si `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` absents du `.env`, l'archivage et le
+    `corpus-pdfs` + table `public.corpus_documents` (projet `GoreeAR`). Optionnel - si `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` absents du `.env`, l'archivage et le
     bouton « Visualiser » sont simplement désactivés.
 - **Modèle IA par défaut :** `gemini-3.5-flash-lite` (ultra-rapide < 2s, économique en tokens, support complet du File Search Tool)
 
 ---
 
-## 3. Règles de Sécurité et Clé API — Strictes
+## 3. Règles de Sécurité et Clé API - Strictes
 
 1. **Jamais de clé/secret en dur dans le code source** :
    - `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE` sont chargés depuis `.env` via `python-dotenv`.
@@ -65,14 +64,14 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
    - Le bucket `corpus-pdfs` est **privé** : la visualisation d'un PDF passe par une URL signée (expiration 1 h) générée côté serveur, jamais par un lien public.
 3. **Authentification obligatoire** :
    - L'accès à la plateforme passe par une connexion (`/login`). Toute route hors `/login`, `/logout`, `/static/*` est refusée sans session (302 pour les pages, 401 pour `/api/*`).
-   - Comptes dans `public.admin_users` (Supabase, backend-only). Mots de passe **bcrypt** — jamais en clair, jamais renvoyés au front. Création via `python create_admin.py`, pas d'inscription publique.
+   - Comptes dans `public.admin_users` (Supabase, backend-only). Mots de passe **bcrypt** - jamais en clair, jamais renvoyés au front. Création via `python create_admin.py`, pas d'inscription publique.
    - Session : cookie signé `goree_session` (httponly, `same_site=lax`, `secure` si `SESSION_COOKIE_SECURE=true`), durée 8 h. En production HTTPS : `SESSION_COOKIE_SECURE=true` **obligatoire** et `SESSION_SECRET` fixé dans l'environnement.
 
 ---
 
 ## 4. Conventions d'Architecture RAG (File Search Stores)
 
-### 4.1. Granularité des Stores (Option A — Cloisonnement strict)
+### 4.1. Granularité des Stores (Option A - Cloisonnement strict)
 - **Un Store distinct par monument ou par salle physique du musée** :
   - `goree-maison-esclaves`
   - `goree-musee-salle1` (Gorée et Visiteurs Célèbres)
@@ -94,11 +93,11 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 
 ---
 
-## 5. Besoins Non-Fonctionnels (BNF) — Respect impératif
+## 5. Besoins Non-Fonctionnels (BNF) - Respect impératif
 
 Tout agent travaillant sur le backend ou le bac à sable doit respecter :
 
-- **BNF4 — Fiabilité historique et refus strict hors-périmètre :**
+- **BNF4 - Fiabilité historique et refus strict hors-périmètre :**
   - L'agent conversationnel ne doit répondre qu'à partir des documents du store et des faits historiques de Gorée / la traite négrière.
   - Si l'utilisateur pose une question hors-sujet (ex. *« Quelle est la capitale du Japon ? »*, météo, maths), **le prompt système doit contraindre l'IA à refuser poliment** en rappelant sa fonction exclusive de guide patrimonial de l'île.
 - **Adaptation aux Profils UML :**

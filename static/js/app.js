@@ -43,7 +43,7 @@ function ragApp() {
 
         // --- Helpers ---
         formatBytes(n) {
-            if (n === null || n === undefined) return '—';
+            if (n === null || n === undefined) return '-';
             if (n < 1024) return n + ' o';
             if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' Ko';
             return (n / (1024 * 1024)).toFixed(1) + ' Mo';

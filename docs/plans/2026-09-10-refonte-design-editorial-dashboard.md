@@ -1,11 +1,11 @@
-# Plan : Refonte design — coque dashboard éditoriale « Gorée AR »
+# Plan : Refonte design - coque dashboard éditoriale « Gorée AR »
 
 ## Objectif
 
 Refondre l'interface web du back-office (une seule page, `templates/index.html`) pour
 supprimer les marqueurs visuels « générés par IA » (dégradés, glassmorphism, or fluo
 omniprésent, animations décoratives, vocabulaire pompeux) et adopter une **coque de
-dashboard classique** — sidebar de navigation à gauche, topbar, zone de contenu — habillée
+dashboard classique** - sidebar de navigation à gauche, topbar, zone de contenu - habillée
 d'une **charte éditoriale/institutionnelle ancrée dans l'île de Gorée** (chaux, basalte,
 laiton ; serif de titrage *Marcellus* + sans technique *IBM Plex Sans* ; zéro dégradé).
 
@@ -22,9 +22,9 @@ repliable en tiroir sur mobile**, et une **troisième vue « Aide »** (statique
 │   240px)   │                                                │
 │  Gorée AR  │   CONTENU (max ~1000px, aligné à gauche)        │
 │            │                                                │
-│  Corpus ◂  │   — vue 'corpus'  : KPI + nouveau fonds + liste │
-│  Test      │   — vue 'test'    : formulaire playground BNF4  │
-│  Aide      │   — vue 'aide'    : conventions du projet       │
+│  Corpus ◂  │ - vue 'corpus'  : KPI + nouveau fonds + liste │
+│  Test      │ - vue 'test'    : formulaire playground BNF4  │
+│  Aide      │ - vue 'aide'    : conventions du projet       │
 │            │                                                │
 │  ┈┈┈┈┈┈┈┈  │                                                │
 │  Clé API ● │                                                │
@@ -39,7 +39,7 @@ clic sur une entrée de nav.
 - `currentTab` : passe de 2 valeurs (`corpus` / `playground`) à 3 (`corpus` / `test` / `aide`).
   ⚠️ Renommage `playground` → `test` dans le HTML **et** partout où `app.js` le lit. Vérifié :
   `app.js` ne teste jamais `currentTab` par valeur (seul le HTML le fait via `x-show`), donc
-  le renommage est purement HTML. `currentTab` est initialisé à `'corpus'` — inchangé.
+  le renommage est purement HTML. `currentTab` est initialisé à `'corpus'` - inchangé.
 - `sidebarOpen` (bool, défaut `false`) : état du tiroir mobile.
 - `theme` (`'light'` | `'dark'`, lu depuis `localStorage` au démarrage, défaut `'light'`).
 - `toggleTheme()` : bascule `theme`, écrit `localStorage`, applique/retire la classe `dark`
@@ -47,7 +47,7 @@ clic sur une entrée de nav.
 
 ## Stack technique
 
-- Python 3.12+ / FastAPI / Jinja2 (inchangé — aucun fichier `.py` modifié).
+- Python 3.12+ / FastAPI / Jinja2 (inchangé - aucun fichier `.py` modifié).
 - Front : HTML5 + Tailwind CSS **via CDN** (config inline dans `<script>`, pas de build) +
   Alpine.js 3 + Lucide Icons. Toutes ces dépendances CDN existent déjà dans `index.html`.
 - Google Fonts : *Marcellus* (déjà chargée) + **ajout** *IBM Plex Sans* (400, 500, 600) et
@@ -59,15 +59,14 @@ clic sur une entrée de nav.
 ## Prérequis
 
 - Dépendances installées : `pip install -r requirements.txt`.
-- `.env` présent avec `GEMINI_API_KEY` (sinon l'app démarre mais `/api/stores` renvoie 400 —
-  suffisant pour valider le rendu de la coque et de la vue Aide ; pour valider Corpus/Test
+- `.env` présent avec `GEMINI_API_KEY` (sinon l'app démarre mais `/api/stores` renvoie 400 - suffisant pour valider le rendu de la coque et de la vue Aide ; pour valider Corpus/Test
   avec des vraies données il faut une clé valide et au moins un store).
 - Navigateur avec DevTools pour tester le responsive (< 900px) et `localStorage`.
 - Ce plan modifie 5 fichiers, tous dans `templates/` et `static/` :
   - `templates/index.html` (refonte lourde)
   - `static/css/app.css` (nettoyage + tokens)
   - `static/js/app.js` (ajout état thème + sidebar)
-  - `static/js/tailwind.config.js` (miroir de la config inline — non chargé par la page
+  - `static/js/tailwind.config.js` (miroir de la config inline - non chargé par la page
     mais gardé cohérent, cf. `AGENTS.md` §6)
   - `CLAUDE.md` (mise à jour de la section charte) + `AGENTS.md` §2 (charte)
 
@@ -75,7 +74,7 @@ clic sur une entrée de nav.
 
 ## Charte de référence (à respecter dans toutes les tâches)
 
-### Couleurs — thème clair (défaut)
+### Couleurs - thème clair (défaut)
 
 | Rôle              | Hex        | Usage                                             |
 |-------------------|------------|--------------------------------------------------|
@@ -88,7 +87,7 @@ clic sur une entrée de nav.
 | `accent-hover`    | `#856619`  | survol du bouton primaire                        |
 | `danger`          | `#8A3B2E`  | suppression (texte + bord)                       |
 
-### Couleurs — thème sombre (`html.dark`)
+### Couleurs - thème sombre (`html.dark`)
 
 | Rôle              | Hex        |
 |-------------------|------------|
@@ -132,7 +131,7 @@ clic sur une entrée de nav.
 | `Stores Documentaires Déployés`                  | *(pas de titre)*                                    |
 | `Aucun File Search Store`                        | `Aucun fonds pour l'instant. Créez-en un ci-dessus pour y déposer des PDF.` |
 | `API Connectée` (point vert pulsant)            | bas de sidebar : `Clé API` + point + `OK` / `absente` |
-| `Bac à sable de Test RAG — Guide IA Gorée`       | `Test du guide`                                     |
+| `Bac à sable de Test RAG - Guide IA Gorée`       | `Test du guide`                                     |
 | `Interrogation du RAG en cours...`              | `Recherche en cours…`                               |
 | `Tester la réponse de l'Agent IA (Règles BNF4)` | `Envoyer la question`                               |
 | `Réponse de l'Agent IA Gorée AR :`              | `Réponse`                                           |
@@ -149,7 +148,7 @@ clic sur une entrée de nav.
 > **Le dépôt n'est pas un dépôt git** (`git init` non fait). Si `git status` échoue, exécuter
 > d'abord `git init && git add -A && git commit -m "chore: état initial avant refonte design"`
 > puis créer `.gitignore` contenant `.env` et `__pycache__/` (le `.env` contient une vraie
-> clé — ne jamais le committer). Sinon, ignorer les blocs `git` de chaque tâche.
+> clé - ne jamais le committer). Sinon, ignorer les blocs `git` de chaque tâche.
 
 ---
 
@@ -166,7 +165,7 @@ cd "C:/Projects/Python/rag_dashboard"
 # 1. Init git si nécessaire
 git rev-parse --is-inside-work-tree 2>/dev/null || git init
 
-# 2. .gitignore — la clé API réelle est dans .env, NE JAMAIS la committer
+# 2. .gitignore - la clé API réelle est dans .env, NE JAMAIS la committer
 cat > .gitignore <<'EOF'
 .env
 __pycache__/
@@ -199,9 +198,9 @@ git commit -m "chore: sauvegarde de l'UI avant refonte design éditoriale"
 **Fichiers concernés :**
 - `static/css/app.css` (remplacer intégralement)
 
-**Implémentation — remplacer tout le contenu de `static/css/app.css` par :**
+**Implémentation - remplacer tout le contenu de `static/css/app.css` par :**
 ```css
-/* Charte "Gorée AR" — back-office corpus documentaire.
+/* Charte "Gorée AR" - back-office corpus documentaire.
    Registre éditorial : chaux (bg), basalte (ink), laiton (accent). Zéro dégradé. */
 
 :root {
@@ -251,12 +250,12 @@ body {
 }
 ```
 
-**Implémentation — dans `templates/index.html`, remplacer le bloc `<link ... Marcellus ...>` par :**
+**Implémentation - dans `templates/index.html`, remplacer le bloc `<link ... Marcellus ...>` par :**
 ```html
     <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 ```
 
-**Implémentation — dans `templates/index.html`, remplacer le bloc `<style>…</style>` du `<head>` par :**
+**Implémentation - dans `templates/index.html`, remplacer le bloc `<style>…</style>` du `<head>` par :**
 ```html
     <style>
       /* les tokens et le fond sont dans /static/css/app.css */
@@ -264,12 +263,12 @@ body {
     <link rel="stylesheet" href="/static/css/app.css">
 ```
 (⚠️ Vérifier que `app.css` est bien servi : `app.mount("/static", ...)` existe déjà dans
-`app.py`. L'ancien `index.html` **ne chargeait pas** `app.css` — cette ligne l'ajoute.)
+`app.py`. L'ancien `index.html` **ne chargeait pas** `app.css` - cette ligne l'ajoute.)
 
 **Commande à exécuter :**
 ```bash
 python app.py
-# ouvrir http://127.0.0.1:8000 — la page est cassée visuellement (normal),
+# ouvrir http://127.0.0.1:8000 - la page est cassée visuellement (normal),
 # mais : fond crème #F2EEE6, texte brun foncé, aucune erreur 404 sur app.css
 # (vérifier l'onglet Network des DevTools : /static/css/app.css → 200)
 ```
@@ -291,7 +290,7 @@ git commit -m "style: tokens couleur clair/sombre + polices Marcellus/IBM Plex"
 - `templates/index.html` (bloc `<script>tailwind.config = {…}</script>` dans le `<head>`)
 - `static/js/tailwind.config.js` (miroir)
 
-**Implémentation — remplacer le bloc `tailwind.config` inline de `index.html` par :**
+**Implémentation - remplacer le bloc `tailwind.config` inline de `index.html` par :**
 ```html
     <script>
         tailwind.config = {
@@ -328,13 +327,13 @@ git commit -m "style: tokens couleur clair/sombre + polices Marcellus/IBM Plex"
     </script>
 ```
 (Note : mapper toutes les échelles de `borderRadius` sur `2px` neutralise les
-`rounded-xl`/`rounded-2xl` résiduels sans devoir tous les chasser — ceinture + bretelles.
+`rounded-xl`/`rounded-2xl` résiduels sans devoir tous les chasser - ceinture + bretelles.
 Les tâches suivantes les remplacent quand même par `rounded-sm` pour la lisibilité.)
 
-**Implémentation — remplacer `static/js/tailwind.config.js` par le même objet (sans les balises `<script>`), précédé du commentaire :**
+**Implémentation - remplacer `static/js/tailwind.config.js` par le même objet (sans les balises `<script>`), précédé du commentaire :**
 ```js
 // Miroir de la config Tailwind inline de templates/index.html (non chargé par la page,
-// gardé cohérent — cf. AGENTS.md §6). Toute modif ici doit être répercutée dans le <head>.
+// gardé cohérent - cf. AGENTS.md §6). Toute modif ici doit être répercutée dans le <head>.
 tailwind.config = {
     darkMode: 'class',
     theme: {
@@ -377,7 +376,7 @@ change entre `#F2EEE6` et `#1A1815`.
 **Commit :**
 ```bash
 git add templates/index.html static/js/tailwind.config.js
-git commit -m "style: config Tailwind — tokens sémantiques, rayon 2px, polices"
+git commit -m "style: config Tailwind - tokens sémantiques, rayon 2px, polices"
 ```
 
 ---
@@ -387,7 +386,7 @@ git commit -m "style: config Tailwind — tokens sémantiques, rayon 2px, police
 **Fichiers concernés :**
 - `static/js/app.js` (modifier `ragApp()` : ajouter propriétés + méthodes, adapter `init()`)
 
-**Implémentation — dans `static/js/app.js`, modifier l'objet retourné par `ragApp()` :**
+**Implémentation - dans `static/js/app.js`, modifier l'objet retourné par `ragApp()` :**
 
 1. Ajouter ces propriétés juste après `currentTab: 'corpus',` :
 ```js
@@ -453,13 +452,13 @@ git commit -m "feat: état thème clair/sombre persistant + helper navigation si
 
 ---
 
-### Tâche 5 : Construire la coque — sidebar gauche + topbar + overlay mobile
+### Tâche 5 : Construire la coque - sidebar gauche + topbar + overlay mobile
 
 **Fichiers concernés :**
-- `templates/index.html` (remplacer `<body>…</body>` — structure de coque uniquement,
-  le contenu des vues est mis en place aux tâches 6–8)
+- `templates/index.html` (remplacer `<body>…</body>` - structure de coque uniquement,
+  le contenu des vues est mis en place aux tâches 6 - 8)
 
-**Implémentation — remplacer la balise `<body …>` et son contenu jusqu'à `</body>` par :**
+**Implémentation - remplacer la balise `<body …>` et son contenu jusqu'à `</body>` par :**
 ```html
 <body class="font-sans min-h-screen antialiased" x-data="ragApp()" x-init="init()">
 
@@ -532,17 +531,17 @@ git commit -m "feat: état thème clair/sombre persistant + helper navigation si
 
           <!-- VUE : CORPUS  (tâche 6) -->
           <div x-show="currentTab === 'corpus'" class="space-y-8">
-            <p class="text-muted text-sm">Contenu Corpus — mis en place tâche 6.</p>
+            <p class="text-muted text-sm">Contenu Corpus - mis en place tâche 6.</p>
           </div>
 
           <!-- VUE : TEST  (tâche 7) -->
           <div x-show="currentTab === 'test'" class="space-y-6" style="display:none">
-            <p class="text-muted text-sm">Contenu Test — mis en place tâche 7.</p>
+            <p class="text-muted text-sm">Contenu Test - mis en place tâche 7.</p>
           </div>
 
           <!-- VUE : AIDE  (tâche 8) -->
           <div x-show="currentTab === 'aide'" class="space-y-6" style="display:none">
-            <p class="text-muted text-sm">Contenu Aide — mis en place tâche 8.</p>
+            <p class="text-muted text-sm">Contenu Aide - mis en place tâche 8.</p>
           </div>
 
         </div>
@@ -566,7 +565,7 @@ git commit -m "feat: état thème clair/sombre persistant + helper navigation si
 Notes d'implémentation :
 - La classe `dark` sur `<html>` est posée par `applyTheme()` (JS), donc **retirer** `class="dark"`
   de la balise `<html>` en haut du fichier → `<html lang="fr">`.
-- `{{ 'true' if has_api_key else 'false' }}` est rendu côté Jinja avant Alpine — au runtime
+- `{{ 'true' if has_api_key else 'false' }}` est rendu côté Jinja avant Alpine - au runtime
   la classe est fixe (la clé ne change pas pendant la session). C'est voulu.
 - Les `style="display:none"` sur les `x-show` initialement faux évitent le flash au chargement.
 
@@ -588,17 +587,17 @@ sur les boutons de nav (Tab).
 **Commit :**
 ```bash
 git add templates/index.html
-git commit -m "feat: coque dashboard — sidebar gauche, topbar, tiroir mobile, 3 vues"
+git commit -m "feat: coque dashboard - sidebar gauche, topbar, tiroir mobile, 3 vues"
 ```
 
 ---
 
-### Tâche 6 : Vue Corpus — KPI + création de fonds + liste des fonds
+### Tâche 6 : Vue Corpus - KPI + création de fonds + liste des fonds
 
 **Fichiers concernés :**
 - `templates/index.html` (remplacer le bloc `<div x-show="currentTab === 'corpus'">…</div>`)
 
-**Implémentation — remplacer le placeholder de la vue corpus par :**
+**Implémentation - remplacer le placeholder de la vue corpus par :**
 ```html
           <div x-show="currentTab === 'corpus'" class="space-y-10">
 
@@ -634,7 +633,7 @@ git commit -m "feat: coque dashboard — sidebar gauche, topbar, tiroir mobile, 
                 </button>
               </form>
               <p class="prose-help text-[13px] text-muted">
-                Un fonds par monument ou salle du musée (ex. Maison des Esclaves, Musée — Salle 1).
+                Un fonds par monument ou salle du musée (ex. Maison des Esclaves, Musée - Salle 1).
                 Chaque fonds reçoit un identifiant à reporter dans la colonne
                 <span class="font-mono">nom_store_rag</span> de la base <span class="font-mono">goree_ar.db</span>.
               </p>
@@ -705,7 +704,7 @@ git commit -m "feat: coque dashboard — sidebar gauche, topbar, tiroir mobile, 
                            class="block border border-dashed border-line rounded-sm px-4 py-4 text-center
                                   cursor-pointer hover:border-accent transition-colors">
                       <span class="text-[13px] text-muted">
-                        Déposer un PDF — Google se charge de l'indexation et des embeddings
+                        Déposer un PDF - Google se charge de l'indexation et des embeddings
                       </span>
                     </label>
                   </div>
@@ -722,8 +721,7 @@ python app.py
 # Avec une clé API valide + au moins un fonds : la vue Corpus affiche les 3 KPI,
 # le formulaire de création, la liste des fonds avec ID mono + bouton copier,
 # les documents en lignes, la zone de dépôt en filet tireté.
-# Sans clé : les KPI restent à 0, un message d'erreur peut apparaître (alert JS existant) —
-# vérifier au moins que la structure statique s'affiche correctement.
+# Sans clé : les KPI restent à 0, un message d'erreur peut apparaître (alert JS existant) - # vérifier au moins que la structure statique s'affiche correctement.
 # Tester : créer un fonds → toast "Fonds créé." ; copier l'ID → toast "ID copié…".
 ```
 
@@ -739,12 +737,12 @@ git commit -m "feat(corpus): KPI plats, création de fonds, liste en blocs à fi
 
 ---
 
-### Tâche 7 : Vue Test — formulaire playground BNF4 + réponse
+### Tâche 7 : Vue Test - formulaire playground BNF4 + réponse
 
 **Fichiers concernés :**
 - `templates/index.html` (remplacer le bloc `<div x-show="currentTab === 'test'">…</div>`)
 
-**Implémentation — remplacer le placeholder de la vue test par :**
+**Implémentation - remplacer le placeholder de la vue test par :**
 ```html
           <div x-show="currentTab === 'test'" class="space-y-6" style="display:none">
 
@@ -843,12 +841,12 @@ git commit -m "feat(test): formulaire playground BNF4 sobre, réponse en bloc à
 
 ---
 
-### Tâche 8 : Vue Aide — conventions du projet
+### Tâche 8 : Vue Aide - conventions du projet
 
 **Fichiers concernés :**
 - `templates/index.html` (remplacer le bloc `<div x-show="currentTab === 'aide'">…</div>`)
 
-**Implémentation — remplacer le placeholder de la vue aide par :**
+**Implémentation - remplacer le placeholder de la vue aide par :**
 ```html
           <div x-show="currentTab === 'aide'" class="space-y-8 prose-help" style="display:none">
 
@@ -887,7 +885,7 @@ git commit -m "feat(test): formulaire playground BNF4 sobre, réponse en bloc à
             </section>
 
             <section class="space-y-2">
-              <h2 class="font-display text-xl text-ink">Règle BNF4 — refus hors périmètre</h2>
+              <h2 class="font-display text-xl text-ink">Règle BNF4 - refus hors périmètre</h2>
               <p class="text-sm text-muted">
                 Le guide ne répond qu'à partir des documents du fonds et des faits historiques
                 de Gorée et de la traite négrière. Toute question sans lien (géographie
@@ -923,20 +921,20 @@ git commit -m "feat(aide): vue statique des conventions du projet"
 
 **Checklist à exécuter (cocher chaque point dans le navigateur) :**
 
-1. **Aucun résidu visuel « IA »** — rechercher dans `index.html` (Grep) :
+1. **Aucun résidu visuel « IA »** - rechercher dans `index.html` (Grep) :
    ```bash
    grep -nE 'gradient|backdrop-blur|animate-(pulse|bounce)|shadow-amber|goree-(bg|surface|card|gold|border|accent)|gold-gradient-text|uppercase|tracking-wider|rounded-(lg|xl|2xl|full)|🇫|🇬|🇸' templates/index.html static/css/app.css
    ```
    Résultat attendu : **aucune correspondance** (sauf `rounded-*` si tu as gardé la neutralisation
-   Tailwind — dans ce cas c'est OK, mais préférer `rounded-sm` explicite).
+   Tailwind - dans ce cas c'est OK, mais préférer `rounded-sm` explicite).
 
 2. **Thème** : bascule clair↔sombre sur les 3 vues, F5 → thème conservé. Contraste texte lisible
-   dans les deux (vérifier `muted` sur `bg` : ratio ≥ 4.5:1 pour le texte courant — `#6B6459`
+   dans les deux (vérifier `muted` sur `bg` : ratio ≥ 4.5:1 pour le texte courant - `#6B6459`
    sur `#F2EEE6` ≈ 4.7:1 OK ; `#9A9184` sur `#1A1815` ≈ 5.2:1 OK).
 
 3. **Focus clavier** : `Tab` parcourt sidebar → topbar → contenu ; anneau de focus visible
    sur boutons, liens, champs (Tailwind met un ring par défaut sur `:focus-visible` pour les
-   `<button>`/`<a>` ? Non — ajouter dans `app.css` si absent) :
+   `<button>`/`<a>` ? Non - ajouter dans `app.css` si absent) :
    ```css
    :where(a, button, input, select, textarea, label[for]):focus-visible {
      outline: 2px solid var(--accent);
@@ -947,8 +945,7 @@ git commit -m "feat(aide): vue statique des conventions du projet"
 4. **Responsive** : tester à 1280 / 900 / 640 / 375 px.
    - ≥ 1024px : sidebar fixe visible, pas de bouton ☰.
    - < 1024px : sidebar cachée, ☰ visible, tiroir + overlay OK, fermeture au clic entrée/overlay.
-   - < 640px : formulaire « Nouveau fonds » empilé, 3 selects du Test empilés, KPI —
-     **vérifier** que les 3 blocs KPI ne débordent pas ; si trop serrés, passer le conteneur
+   - < 640px : formulaire « Nouveau fonds » empilé, 3 selects du Test empilés, KPI - **vérifier** que les 3 blocs KPI ne débordent pas ; si trop serrés, passer le conteneur
      KPI en `flex-col sm:flex-row` avec `divide-y sm:divide-y-0 sm:divide-x`.
 
 5. **`prefers-reduced-motion`** : activer dans DevTools (Rendering → Emulate CSS
@@ -978,16 +975,16 @@ git commit -m "polish: focus visible, garde-fous responsive, passe anti-résidus
 
 **Fichiers concernés :**
 - `CLAUDE.md` (section « Frontend »)
-- `AGENTS.md` (§2 « Stack Technique FIGÉE » — lignes Design System / Frontend)
+- `AGENTS.md` (§2 « Stack Technique FIGÉE » - lignes Design System / Frontend)
 
-**Implémentation — dans `CLAUDE.md`, remplacer le paragraphe de la sous-section `### Frontend` par :**
+**Implémentation - dans `CLAUDE.md`, remplacer le paragraphe de la sous-section `### Frontend` par :**
 ```markdown
 ### Frontend
 
 Server renders one page: `templates/index.html` (Jinja2), styled with Tailwind (CDN) + an
 inline `tailwind.config` using semantic color tokens (`bg`, `surface`, `ink`, `muted`,
 `line`, `accent`, `danger`) backed by CSS custom properties in `static/css/app.css`. Light
-theme by default; `html.dark` swaps the tokens. Editorial "Gorée" charter — chaux `#F2EEE6`
+theme by default; `html.dark` swaps the tokens. Editorial "Gorée" charter - chaux `#F2EEE6`
 ground, basalte `#1E1B16` ink, laiton `#9C7A24` accent, no gradients, 2px radius, hairline
 `#D8D1C2` dividers instead of shadows. Fonts: *Marcellus* (display / headings / KPI numbers),
 *IBM Plex Sans* (body), *IBM Plex Mono* (store IDs only).
@@ -995,15 +992,15 @@ ground, basalte `#1E1B16` ink, laiton `#9C7A24` accent, no gradients, 2px radius
 Layout is a dashboard shell: fixed left sidebar (Corpus / Test / Aide), thin topbar with the
 current view title and a light/dark toggle. Below 1024px the sidebar collapses into a ☰
 drawer with an overlay. All interactivity is one Alpine.js component, `ragApp()` in
-`static/js/app.js` — `currentTab` (`corpus` / `test` / `aide`), `theme` (persisted in
+`static/js/app.js` - `currentTab` (`corpus` / `test` / `aide`), `theme` (persisted in
 `localStorage` under `goree-theme`), `sidebarOpen`, plus the existing fetch calls to `/api/*`.
 `static/js/tailwind.config.js` mirrors the inline config and must be kept in sync.
 ```
 
-**Implémentation — dans `AGENTS.md` §2, remplacer les deux puces `Frontend & UI` et `Design System` par :**
+**Implémentation - dans `AGENTS.md` §2, remplacer les deux puces `Frontend & UI` et `Design System` par :**
 ```markdown
 - **Frontend & UI :** HTML5, Tailwind CSS (via CDN, config inline), Alpine.js, Lucide Icons
-- **Design System :** Charte « Gorée AR » éditoriale — coque dashboard (sidebar gauche +
+- **Design System :** Charte « Gorée AR » éditoriale - coque dashboard (sidebar gauche +
   topbar), thème clair par défaut + sombre (`html.dark`, persisté `localStorage`).
   Fond chaux `#F2EEE6` / `#1A1815`, encre basalte `#1E1B16` / `#E8E2D4`, accent laiton
   `#9C7A24` / `#C9A64E` (usage rare : bouton primaire, liens, onglet actif), brique
@@ -1050,14 +1047,14 @@ git commit -m "docs: charte design éditoriale + coque dashboard"
 
 ## Exécution du plan
 
-### Option A — Sous-agent par tâche (session courante)
+### Option A - Sous-agent par tâche (session courante)
 Chaque tâche est confiée à un sous-agent dédié dans cette session.
 Lancer avec : `/execute-plan docs/plans/2026-09-10-refonte-design-editorial-dashboard.md`
 
-### Option B — Session parallèle (worktree isolé)
+### Option B - Session parallèle (worktree isolé)
 Exécuter le plan dans une branche isolée via la compétence `executing-plans`.
 Lancer avec : `/executing-plans docs/plans/2026-09-10-refonte-design-editorial-dashboard.md`
 
-### Option C — Manuel, tâche par tâche
+### Option C - Manuel, tâche par tâche
 Suivre les tâches 1→10 dans l'ordre, valider le critère de chaque tâche avant la suivante,
 committer à chaque étape.
