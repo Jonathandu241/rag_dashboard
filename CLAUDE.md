@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Authoritative project rules
 
-`AGENTS.md` holds the firm project conventions (stack, security, RAG store granularity, BNF4 requirements, trilingual support). Read it and follow it. This file only adds architecture context and commands not covered there.
+`AGENTS.md` holds the firm project conventions: stack (§2), the Supabase DB layout (§2 bis: `corpus_documents`, `admin_users`, the `corpus-pdfs` bucket, and the mobile-app tables you must not touch), security incl. the `.env` table (§3.1) and the auth contract (§3.3), RAG store granularity (§4), BNF4 + trilingual (§5). Read it and follow it. This file adds architecture context and commands not covered there.
 
 Key constraints from `AGENTS.md` worth repeating:
 - Never hardcode a secret. `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE` are loaded from `.env` via `python-dotenv`; `.env` must never be committed.
 - One File Search Store per monument / museum room (strict compartmentalization). Store display names follow `goree-<lieu>` (e.g. `goree-maison-esclaves`).
 - Always pass `config={"display_name": file.filename}` on upload so Google doesn't name the doc after the temp file.
 - The playground system prompt must enforce BNF4: refuse politely anything outside Gorée / the transatlantic slave trade; adapt tone to profile (`touriste` / `eleve` / `universitaire`); support `fr` / `en` / `wo`.
+- No em/en dashes anywhere in the project: use a plain `-`. French comments and UI strings.
 
 ## Git
 
@@ -89,8 +90,10 @@ This repo is the **back-office** half of Gorée AR. The **front-office** is a Un
 
 ## Notes
 
-- App comments, prompts, and UI strings are in French - match that.
+- App comments, prompts, and UI strings are in French - match that. No em/en dashes anywhere - plain `-` only.
 - The model names in `test_query`'s `modeles` list and in `test_call.py` are the project's chosen defaults; leave them as-is unless asked to change model selection.
 - `get_client()` raises HTTP 400 (not 500) when `GEMINI_API_KEY` is missing - preserve that distinction.
 - On Windows, `python app.py` works (emoji were removed from the startup `print()`s). `python -m uvicorn app:app` also works.
-- Supabase project `GoreeAR` also hosts the **mobile app's** schema (`point_interet`, `routes`, `traduction`, …). The back-office only owns `corpus_documents`, `admin_users`, and the `corpus-pdfs` bucket - don't touch the rest.
+- Supabase project `GoreeAR` also hosts the **mobile app's** schema (`point_interet`, `routes`, `traduction`, …). The back-office only owns `corpus_documents`, `admin_users`, and the `corpus-pdfs` bucket - don't touch the rest. `admin_users` requires Supabase to be configured for login to work at all.
+- Editing `static/js/app.js` requires bumping the `?v=N` cache-buster in `templates/index.html` (currently `?v=3`).
+- `bcrypt` is used directly (not `passlib` - incompatible with `bcrypt` 5.x). `create_admin.py` is the only way to make accounts.

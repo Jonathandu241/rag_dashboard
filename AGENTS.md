@@ -49,7 +49,27 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
   - `supabase` (client `service_role`) pour l'archivage des PDF sources : bucket privé
     `corpus-pdfs` + table `public.corpus_documents` (projet `GoreeAR`). Optionnel - si `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` absents du `.env`, l'archivage et le
     bouton « Visualiser » sont simplement désactivés.
+  - `bcrypt` + `itsdangerous` pour l'authentification (voir §3.3)
 - **Modèle IA par défaut :** `gemini-3.5-flash-lite` (ultra-rapide < 2s, économique en tokens, support complet du File Search Tool)
+
+---
+
+## 2 bis. Base de Données Supabase (projet `GoreeAR`, `ubajzrbphbqoomtxoqsk`)
+
+Le projet Supabase héberge **aussi** le schéma de l'app mobile (`point_interet`, `routes`,
+`traduction`, `utilisateur`, `route_*`). Le back-office ne possède que ce qui suit et **ne
+doit jamais toucher au reste** :
+
+| Objet | Rôle |
+|---|---|
+| Table `public.corpus_documents` | Lie un document Google File Search (`google_document_name`) à sa copie dans le bucket (`storage_path`) + `file_name`, `size_bytes`, `store_display_name`, `created_at`. |
+| Table `public.admin_users` | Comptes admin : `email` (unique, insensible casse), `password_hash` (bcrypt), `full_name`, `is_active`, `last_login_at`. |
+| Bucket privé `corpus-pdfs` | Copie des PDF sources, un objet par document : `<store_ref>/<uuid>.pdf`. |
+
+Les deux tables ont **RLS activé, aucune policy, `SELECT` révoqué pour `anon` et
+`authenticated`** : seul le backend y accède, avec la `service_role` key. Les hash bcrypt
+et les URL de stockage ne transitent jamais vers le front. L'`INFO rls_enabled_no_policy`
+des advisors Supabase est **volontaire** (verrou total assumé).
 
 ---
 
@@ -62,10 +82,35 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 2. **Affichage sécurisé sur l'interface** :
    - L'interface web ne doit jamais afficher la clé Gemini en clair (masquage obligatoire : `AQ...wdyg`). Aucune clé Supabase n'est transmise au front.
    - Le bucket `corpus-pdfs` est **privé** : la visualisation d'un PDF passe par une URL signée (expiration 1 h) générée côté serveur, jamais par un lien public.
-3. **Authentification obligatoire** :
-   - L'accès à la plateforme passe par une connexion (`/login`). Toute route hors `/login`, `/logout`, `/static/*` est refusée sans session (302 pour les pages, 401 pour `/api/*`).
-   - Comptes dans `public.admin_users` (Supabase, backend-only). Mots de passe **bcrypt** - jamais en clair, jamais renvoyés au front. Création via `python create_admin.py`, pas d'inscription publique.
-   - Session : cookie signé `goree_session` (httponly, `same_site=lax`, `secure` si `SESSION_COOKIE_SECURE=true`), durée 8 h. En production HTTPS : `SESSION_COOKIE_SECURE=true` **obligatoire** et `SESSION_SECRET` fixé dans l'environnement.
+
+### 3.1. Variables `.env` attendues
+
+| Variable | Rôle | Obligatoire |
+|---|---|---|
+| `GEMINI_API_KEY` | Clé Gemini (File Search + génération) | Oui |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | Archivage PDF + comptes admin. Absents → archivage et « Visualiser » désactivés, mais **l'authentification l'est aussi** (comptes en base). | En pratique oui |
+| `SESSION_SECRET` | Signature du cookie de session | Oui (sinon clé éphémère) |
+| `SESSION_COOKIE_SECURE` | `true` derrière HTTPS, `false` en local | Défaut `false` |
+### 3.3. Authentification obligatoire
+
+- L'accès à la plateforme passe par une connexion (`/login`). Le middleware `require_login`
+  refuse toute route hors `PUBLIC_PATHS` (`/login`, `/logout`, `/static/*`, `/favicon.ico`)
+  sans session : **302** vers `/login` pour les pages, **401 JSON** pour `/api/*`.
+- **Ordre des middlewares** : `require_login` est enregistré **avant** `SessionMiddleware`
+  pour s'exécuter **après** lui (Starlette empile à l'envers). Ne pas réordonner.
+- Comptes dans `public.admin_users`. Mots de passe **bcrypt** (module `bcrypt` directement,
+  `passlib` 1.7.4 étant incompatible avec `bcrypt` 5.x, ne pas le réintroduire). Jamais en
+  clair, jamais renvoyés au front.
+- `POST /login` : vérifie email (insensible casse) + `is_active` + bcrypt, pose
+  `session["user_id"]`, met à jour `last_login_at`. Erreur générique « Identifiants
+  invalides ». Rate-limit en mémoire par IP : 5 échecs / 5 min → **429**.
+- Session : cookie signé `goree_session` (httponly, `same_site=lax`,
+  `https_only=SESSION_COOKIE_SECURE`), durée 8 h. Si `SESSION_SECRET` absent du `.env`, une
+  clé éphémère est générée (sessions perdues au redémarrage) avec un avertissement.
+- **Pas d'inscription publique.** Création / réinitialisation de compte via
+  `python create_admin.py <email> "<Nom>"` (mot de passe demandé en masqué).
+- **En production HTTPS** : `SESSION_COOKIE_SECURE=true` **obligatoire** et `SESSION_SECRET`
+  fixé dans l'environnement d'hébergement.
 
 ---
 
@@ -114,34 +159,36 @@ Tout agent travaillant sur le backend ou le bac à sable doit respecter :
 ```
 rag_dashboard/
 ├── AGENTS.md                  # Ce fichier de règles et conventions
-├── app.py                     # Serveur FastAPI + logique Google GenAI & REST
-├── requirements.txt           # Dépendances Python nécessaires
-├── .env                       # Clé GEMINI_API_KEY (non versionné)
+├── CLAUDE.md                  # Contexte architecture + commandes (pour Claude Code)
+├── app.py                     # Serveur FastAPI : auth, Google GenAI/REST, Supabase
+├── create_admin.py            # Script CLI : création/réinitialisation d'un compte admin
+├── test_call.py               # Diagnostic rapide de l'API Gemini File Search
+├── requirements.txt           # Dépendances Python
+├── .env                       # Secrets, non versionné (cf. §3.1)
 ├── templates/
-│   └── index.html             # Interface web complète (Tailwind + Alpine.js)
+│   ├── index.html             # Interface principale (coque dashboard, Tailwind + Alpine.js)
+│   └── login.html             # Page de connexion (autonome, sans Alpine)
 ├── static/
 │   ├── css/
-│   │   └── app.css            # Styles additionnels éventuels
+│   │   └── app.css            # Fond, dégradés, focus-visible, prefers-reduced-motion
 │   └── js/
-│       ├── app.js             # Logique applicative Alpine.js
-│       └── tailwind.config.js # Configuration Tailwind du thème Gorée AR
-└── test_call.py               # Script de diagnostic rapide de l'API Gemini
+│       ├── app.js             # Composant Alpine `ragApp()` (chargé avec ?v=N)
+│       └── tailwind.config.js # Miroir de la config Tailwind inline
+└── docs/plans/                # Plans d'implémentation (dont _avant/ : snapshots figés)
 ```
 
 ---
 
 ## 7. Commandes Utiles pour l'Agent
 
-- **Installation des dépendances :**
-  ```bash
-  pip install -r requirements.txt
-  ```
-- **Lancement du serveur de développement :**
-  ```bash
-  python app.py
-  ```
-  *(Accessible par défaut sur `http://localhost:8000` avec rechargement automatique)*
-- **Test de diagnostic direct de l'API :**
-  ```bash
-  python test_call.py
-  ```
+```bash
+pip install -r requirements.txt          # dépendances
+python app.py                            # serveur dev, http://localhost:8000, --reload
+python create_admin.py <email> "<Nom>"   # créer/réinitialiser un compte admin (mdp masqué)
+python test_call.py                      # diagnostic direct de l'API Gemini
+```
+
+Pas de suite de tests, de linter ni de build. `python app.py` fonctionne sous Windows
+(les emoji des `print()` de démarrage ont été retirés) ; `python -m uvicorn app:app` aussi.
+`app.js` étant chargé avec un cache-buster `?v=N`, **incrémenter N** dans `index.html` à
+chaque modification de `app.js`.
