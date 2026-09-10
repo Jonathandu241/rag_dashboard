@@ -41,19 +41,20 @@ Two distinct paths to Google, deliberately:
 ### Frontend
 
 Server renders one page: `templates/index.html` (Jinja2), styled with Tailwind (CDN) + an
-inline `tailwind.config` using semantic color tokens (`bg`, `surface`, `ink`, `muted`,
-`line`, `accent`, `danger`) backed by CSS custom properties in `static/css/app.css`. Light
-theme by default; `html.dark` swaps the tokens. Editorial "Gorée" charter — chaux `#F2EEE6`
-ground, basalte `#1E1B16` ink, laiton `#9C7A24` accent, no gradients, 2px radius, hairline
-`#D8D1C2` dividers instead of shadows. Fonts: *Marcellus* (display / headings / KPI numbers),
-*IBM Plex Sans* (body), *IBM Plex Mono* (store IDs only).
+inline `tailwind.config` under the `goree` color namespace (`bg #0B0D17`, `surface #13172B`,
+`card #1B203B`, `border rgba(232,200,74,.15)`, `gold #E8C84A` / `goldHover #F4D665`,
+`accent #3B82F6`). Dark theme only (`<html class="dark">`, forced — no toggle). "Gorée AR"
+charter: deep navy ground with subtle radial gold/blue gradients (`static/css/app.css`),
+gold accent used freely, `rounded-xl`/`rounded-2xl` cards with coloured glow shadows,
+Lucide icons throughout, flag emoji in the language select. Fonts: *Marcellus* (display /
+headings) + *Plus Jakarta Sans* (body).
 
-Layout is a dashboard shell: fixed left sidebar (Corpus / Test / Aide), thin topbar with the
-current view title and a light/dark toggle. Below 1024px the sidebar collapses into a ☰
-drawer with an overlay. All interactivity is one Alpine.js component, `ragApp()` in
-`static/js/app.js` — `currentTab` (`corpus` / `test` / `aide`), `theme` (persisted in
-`localStorage` under `goree-theme`), `sidebarOpen`, plus the existing fetch calls to `/api/*`.
-`static/js/tailwind.config.js` mirrors the inline config and must be kept in sync.
+Layout is a dashboard shell: fixed left sidebar (Corpus / Test / Aide nav, active entry =
+gold pill), sticky topbar with the current view title. Below 1024px the sidebar collapses
+into a ☰ drawer with an overlay. All interactivity is one Alpine.js component, `ragApp()`
+in `static/js/app.js` — `currentTab` (`corpus` / `test` / `aide`), `sidebarOpen`, `goTo()`,
+plus the fetch calls to `/api/*`. Icons re-rendered via `lucide.createIcons()` after DOM
+updates. `static/js/tailwind.config.js` mirrors the inline config and must be kept in sync.
 
 ### How this fits the larger system
 
