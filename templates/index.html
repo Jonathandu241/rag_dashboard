@@ -123,8 +123,119 @@
         <div class="max-w-[1000px] mx-auto">
 
           <!-- VUE : CORPUS  (tâche 6) -->
-          <div x-show="currentTab === 'corpus'" class="space-y-8">
-            <p class="text-muted text-sm">Contenu Corpus — mis en place tâche 6.</p>
+          <div x-show="currentTab === 'corpus'" class="space-y-10">
+
+            <!-- KPI : 3 blocs plats séparés par filets verticaux -->
+            <div class="flex border border-line divide-x divide-line">
+              <div class="flex-1 px-5 py-4">
+                <div class="font-display text-3xl text-ink" x-text="stats.total_stores">0</div>
+                <div class="text-[13px] text-muted mt-1">Fonds</div>
+              </div>
+              <div class="flex-1 px-5 py-4">
+                <div class="font-display text-3xl text-ink" x-text="stats.total_docs">0</div>
+                <div class="text-[13px] text-muted mt-1">Documents</div>
+              </div>
+              <div class="flex-1 px-5 py-4">
+                <div class="font-display text-xl text-ink mt-1">gemini-flash-lite</div>
+                <div class="text-[13px] text-muted mt-1">Modèle</div>
+              </div>
+            </div>
+
+            <!-- Nouveau fonds -->
+            <section class="space-y-3">
+              <h2 class="font-display text-xl text-ink">Nouveau fonds</h2>
+              <form @submit.prevent="createStore()" class="flex flex-col sm:flex-row gap-3">
+                <input type="text" x-model="newStoreName" required
+                       placeholder="goree-musee-salle2"
+                       class="flex-1 sm:max-w-xs bg-surface border border-line rounded-sm px-3 py-2
+                              text-sm text-ink placeholder-muted/60
+                              focus:outline-none focus:border-accent">
+                <button type="submit" :disabled="loading"
+                        class="bg-accent hover:bg-accent-hover text-bg font-medium text-sm
+                               px-4 py-2 rounded-sm transition-colors disabled:opacity-50">
+                  Créer le fonds
+                </button>
+              </form>
+              <p class="prose-help text-[13px] text-muted">
+                Un fonds par monument ou salle du musée (ex. Maison des Esclaves, Musée — Salle 1).
+                Chaque fonds reçoit un identifiant à reporter dans la colonne
+                <span class="font-mono">nom_store_rag</span> de la base <span class="font-mono">goree_ar.db</span>.
+              </p>
+            </section>
+
+            <!-- Liste des fonds -->
+            <section class="space-y-0">
+              <div class="flex items-center justify-between pb-3 border-b border-line">
+                <h2 class="font-display text-xl text-ink">Fonds documentaires</h2>
+                <button @click="fetchStores()"
+                        class="text-[13px] text-muted hover:text-ink flex items-center gap-1.5 transition-colors">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5" :class="loading && 'animate-spin'"></i>
+                  Actualiser
+                </button>
+              </div>
+
+              <template x-if="stores.length === 0">
+                <p class="prose-help text-sm text-muted py-8">
+                  Aucun fonds pour l'instant. Créez-en un ci-dessus pour y déposer des PDF.
+                </p>
+              </template>
+
+              <template x-for="store in stores" :key="store.name">
+                <div class="py-6 border-b border-line">
+
+                  <!-- En-tête du fonds -->
+                  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h3 class="font-display text-lg text-ink" x-text="store.display_name"></h3>
+                    <span class="text-[13px] text-muted" x-text="`${store.docs_count} document(s)`"></span>
+                    <button @click="deleteStore(store.name, store.display_name)"
+                            class="ml-auto text-[13px] text-danger hover:underline">
+                      Supprimer
+                    </button>
+                  </div>
+
+                  <!-- ID technique -->
+                  <div class="flex items-center gap-2 mt-1.5">
+                    <code class="font-mono text-[12px] text-muted break-all select-all" x-text="store.name"></code>
+                    <button @click="copyToClipboard(store.name)" title="Copier l'identifiant"
+                            class="text-muted hover:text-accent shrink-0">
+                      <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+
+                  <!-- Documents -->
+                  <div class="mt-4 space-y-1.5">
+                    <template x-if="store.docs.length === 0">
+                      <p class="text-[13px] text-muted">Aucun document indexé.</p>
+                    </template>
+                    <template x-for="doc in store.docs" :key="doc.name">
+                      <div class="flex items-center gap-3 py-1.5 border-b border-line/60 last:border-0">
+                        <i data-lucide="file-text" class="w-4 h-4 text-muted shrink-0"></i>
+                        <span class="text-sm text-ink truncate flex-1" x-text="doc.display_name"></span>
+                        <span class="text-[12px] text-muted" x-text="doc.state.toLowerCase()"></span>
+                        <button @click="deleteDocument(doc.name)"
+                                class="text-muted hover:text-danger" title="Retirer le document">
+                          <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Dépôt PDF -->
+                  <div class="mt-4">
+                    <input type="file" accept=".pdf" :id="`file_${store.name}`" class="hidden"
+                           @change="uploadFile(store.name, $event)">
+                    <label :for="`file_${store.name}`"
+                           class="block border border-dashed border-line rounded-sm px-4 py-4 text-center
+                                  cursor-pointer hover:border-accent transition-colors">
+                      <span class="text-[13px] text-muted">
+                        Déposer un PDF — Google se charge de l'indexation et des embeddings
+                      </span>
+                    </label>
+                  </div>
+
+                </div>
+              </template>
+            </section>
           </div>
 
           <!-- VUE : TEST  (tâche 7) -->
