@@ -33,8 +33,15 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 - **Langage & Runtime :** Python 3.12+ (testé et validé sous Python 3.14 Windows)
 - **Framework Web Backend :** FastAPI + Uvicorn (ASGI)
 - **Moteur de Templates :** Jinja2
-- **Frontend & UI :** HTML5, Tailwind CSS (via CDN), Alpine.js, Lucide Icons
-- **Design System :** Charte graphique « Gorée AR » (Bleu nuit `#0B0D17` / `#13172B`, Or Gorée `#E8C84A`, typographies *Marcellus* et *Plus Jakarta Sans*)
+- **Frontend & UI :** HTML5, Tailwind CSS (via CDN, config inline), Alpine.js, Lucide Icons
+- **Design System :** Charte « Gorée AR » éditoriale — coque dashboard (sidebar gauche +
+  topbar), thème clair par défaut + sombre (`html.dark`, persisté `localStorage`).
+  Fond chaux `#F2EEE6` / `#1A1815`, encre basalte `#1E1B16` / `#E8E2D4`, accent laiton
+  `#9C7A24` / `#C9A64E` (usage rare : bouton primaire, liens, onglet actif), brique
+  `#8A3B2E` pour la suppression. Aucun dégradé, rayon 2px, séparation par filets `#D8D1C2`.
+  Typographies : *Marcellus* (titres, chiffres), *IBM Plex Sans* (corps), *IBM Plex Mono*
+  (identifiants de fonds uniquement). Tokens sémantiques Tailwind : `bg`, `surface`, `ink`,
+  `muted`, `line`, `accent`, `accent-hover`, `danger`.
 - **SDK & API Cloud :** 
   - SDK officiel `google-genai` pour la gestion des `file_search_stores` (création, upload de PDF, suppression)
   - Requêtes HTTP REST directes (`urllib.request` ou `requests`) vers l'endpoint v1beta `generateContent` pour le bac à sable de test (garantissant un alignement 1:1 avec les appels `UnityWebRequest` de l'application mobile)
