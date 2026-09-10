@@ -12,6 +12,10 @@ Key constraints from `AGENTS.md` worth repeating:
 - Always pass `config={"display_name": file.filename}` on upload so Google doesn't name the doc after the temp file.
 - The playground system prompt must enforce BNF4: refuse politely anything outside Gorée / the transatlantic slave trade; adapt tone to profile (`touriste` / `eleve` / `universitaire`); support `fr` / `en` / `wo`.
 
+## Git
+
+- Commit messages must **not** include a `Co-Authored-By` trailer. Plain messages only.
+
 ## Commands
 
 ```bash
