@@ -40,7 +40,20 @@ Two distinct paths to Google, deliberately:
 
 ### Frontend
 
-Server renders one page: `templates/index.html` (Jinja2), styled with Tailwind (CDN) + the `static/js/tailwind.config.js` theme (Gorée AR charter: navy `#0B0D17`/`#13172B`, gold `#E8C84A`, fonts *Marcellus* / *Plus Jakarta Sans*). All interactivity is one Alpine.js component, `ragApp()` in `static/js/app.js` — tabs (`corpus` / playground), fetch calls to the `/api/*` endpoints via `FormData`, toasts, clipboard copy of store IDs. Icons via Lucide, re-rendered with `lucide.createIcons()` after DOM updates.
+Server renders one page: `templates/index.html` (Jinja2), styled with Tailwind (CDN) + an
+inline `tailwind.config` using semantic color tokens (`bg`, `surface`, `ink`, `muted`,
+`line`, `accent`, `danger`) backed by CSS custom properties in `static/css/app.css`. Light
+theme by default; `html.dark` swaps the tokens. Editorial "Gorée" charter — chaux `#F2EEE6`
+ground, basalte `#1E1B16` ink, laiton `#9C7A24` accent, no gradients, 2px radius, hairline
+`#D8D1C2` dividers instead of shadows. Fonts: *Marcellus* (display / headings / KPI numbers),
+*IBM Plex Sans* (body), *IBM Plex Mono* (store IDs only).
+
+Layout is a dashboard shell: fixed left sidebar (Corpus / Test / Aide), thin topbar with the
+current view title and a light/dark toggle. Below 1024px the sidebar collapses into a ☰
+drawer with an overlay. All interactivity is one Alpine.js component, `ragApp()` in
+`static/js/app.js` — `currentTab` (`corpus` / `test` / `aide`), `theme` (persisted in
+`localStorage` under `goree-theme`), `sidebarOpen`, plus the existing fetch calls to `/api/*`.
+`static/js/tailwind.config.js` mirrors the inline config and must be kept in sync.
 
 ### How this fits the larger system
 

@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gorée AR — RAG Studio & Corpus Manager</title>
+    <script>try{if(localStorage.getItem('goree-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}</script>
+    <title>Gorée AR — Corpus documentaire</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
     <!-- Tailwind & Alpine.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -22,305 +23,359 @@
                 extend: {
                     fontFamily: {
                         display: ['Marcellus', 'serif'],
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
                     },
                     colors: {
-                        goree: {
-                            bg: '#0B0D17',
-                            surface: '#13172B',
-                            card: '#1B203B',
-                            border: 'rgba(232, 200, 74, 0.15)',
-                            gold: '#E8C84A',
-                            goldHover: '#F4D665',
-                            accent: '#3B82F6',
-                        }
-                    }
-                }
-            }
+                        bg: 'var(--bg)',
+                        surface: 'var(--surface)',
+                        ink: 'var(--ink)',
+                        muted: 'var(--muted)',
+                        line: 'var(--line)',
+                        accent: 'var(--accent)',
+                        'accent-hover': 'var(--accent-hover)',
+                        danger: 'var(--danger)',
+                    },
+                    borderRadius: {
+                        DEFAULT: '2px',
+                        sm: '2px',
+                        md: '2px',
+                        lg: '2px',
+                        xl: '2px',
+                        '2xl': '2px',
+                        full: '2px',
+                    },
+                },
+            },
         }
     </script>
     <style>
-        body {
-            background-color: #0B0D17;
-            background-image: 
-                radial-gradient(at 10% 20%, rgba(232, 200, 74, 0.05) 0px, transparent 50%),
-                radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
-        }
+      /* les tokens et le fond sont dans /static/css/app.css */
     </style>
+    <link rel="stylesheet" href="/static/css/app.css">
 </head>
-<body class="text-slate-100 font-sans min-h-screen flex flex-col antialiased" x-data="ragApp()" x-init="init()">
+<body class="font-sans min-h-screen antialiased" x-data="ragApp()" x-init="init()">
 
-    <!-- Header Navigation -->
-    <header class="border-b border-goree-border bg-goree-surface/80 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-goree-gold to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
-                    <i data-lucide="landmark" class="w-6 h-6 text-goree-bg"></i>
-                </div>
-                <div>
-                    <h1 class="font-display text-xl tracking-wide text-white">GORÉE AR <span class="text-goree-gold font-sans text-xs font-semibold px-2 py-0.5 rounded-full border border-goree-gold/30 bg-goree-gold/10 ml-2">RAG STUDIO</span></h1>
-                    <p class="text-xs text-slate-400">Gestionnaire de Corpus Documentaire • Gemini File Search Tool</p>
-                </div>
-            </div>
+  <!-- Overlay du tiroir mobile -->
+  <div x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false"
+       class="fixed inset-0 bg-black/40 z-30 lg:hidden" style="display:none"></div>
 
-            <!-- Navigation Tabs & API Key Indicator -->
-            <div class="flex items-center space-x-6">
-                <div class="flex bg-goree-bg/60 p-1 rounded-xl border border-white/5">
-                    <button @click="currentTab = 'corpus'" :class="currentTab === 'corpus' ? 'bg-goree-gold text-goree-bg font-semibold shadow-md' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
-                        <i data-lucide="folder-kanban" class="w-4 h-4"></i> Corpus & Stores
-                    </button>
-                    <button @click="currentTab = 'playground'" :class="currentTab === 'playground' ? 'bg-goree-gold text-goree-bg font-semibold shadow-md' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
-                        <i data-lucide="sparkles" class="w-4 h-4"></i> Bac à sable (Test IA)
-                    </button>
-                </div>
+  <div class="flex min-h-screen">
 
-                <div class="flex items-center gap-3 pl-4 border-l border-white/10">
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        API Connectée
-                    </div>
-                </div>
-            </div>
+    <!-- ───────────── SIDEBAR ───────────── -->
+    <aside
+      class="fixed lg:static inset-y-0 left-0 z-40 w-60 shrink-0 bg-surface border-r border-line
+             flex flex-col transition-transform duration-200
+             -translate-x-full lg:translate-x-0"
+      :class="sidebarOpen && '!translate-x-0'">
+
+      <div class="h-14 flex items-center px-5 border-b border-line">
+        <span class="font-display text-lg text-ink">Gorée AR</span>
+      </div>
+
+      <nav class="flex-1 py-3">
+        <template x-for="item in [
+            { id: 'corpus', label: 'Corpus' },
+            { id: 'test',   label: 'Test' },
+            { id: 'aide',   label: 'Aide' }
+          ]" :key="item.id">
+          <button
+            @click="goTo(item.id)"
+            class="w-full text-left px-5 py-2.5 font-display text-[15px] transition-colors"
+            :class="currentTab === item.id
+              ? 'text-ink nav-link-active'
+              : 'text-muted hover:text-ink'"
+            x-text="item.label"></button>
+        </template>
+      </nav>
+
+      <div class="border-t border-line px-5 py-4 text-[13px] text-muted">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-sm"
+                :class="{{ 'true' if has_api_key else 'false' }} ? 'bg-accent' : 'bg-danger'"></span>
+          <span>Clé API {{ 'OK' if has_api_key else 'absente' }}</span>
         </div>
-    </header>
+        {% if has_api_key %}
+        <p class="mt-1 font-mono text-[11px] text-muted">{{ api_key_masked }}</p>
+        {% endif %}
+      </div>
+    </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+    <!-- ───────────── COLONNE PRINCIPALE ───────────── -->
+    <div class="flex-1 min-w-0 flex flex-col">
 
-        <!-- TAB 1 : GESTION DES CORPUS & STORES -->
-        <div x-show="currentTab === 'corpus'" class="space-y-8">
-            
-            <!-- Statistiques / KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 relative overflow-hidden">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Stores Actifs</p>
-                            <h3 class="text-3xl font-bold mt-2 text-white font-display" x-text="stats.total_stores">0</h3>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-goree-gold/10 border border-goree-gold/20 flex items-center justify-center text-goree-gold">
-                            <i data-lucide="folders" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>
+      <!-- TOPBAR -->
+      <header class="h-14 shrink-0 border-b border-line flex items-center gap-3 px-4 sm:px-6">
+        <button @click="sidebarOpen = true" class="lg:hidden text-muted hover:text-ink" aria-label="Ouvrir le menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-display text-lg text-ink"
+            x-text="{ corpus: 'Corpus documentaire', test: 'Test du guide', aide: 'Aide' }[currentTab]"></h1>
+        <button @click="toggleTheme()"
+                class="ml-auto text-muted hover:text-ink transition-colors"
+                :aria-label="theme === 'dark' ? 'Passer en clair' : 'Passer en sombre'">
+          <i x-show="theme !== 'dark'" data-lucide="moon" class="w-5 h-5"></i>
+          <i x-show="theme === 'dark'" data-lucide="sun" class="w-5 h-5" style="display:none"></i>
+        </button>
+      </header>
 
-                <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 relative overflow-hidden">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Documents Indexés</p>
-                            <h3 class="text-3xl font-bold mt-2 text-white font-display" x-text="stats.total_docs">0</h3>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                            <i data-lucide="file-text" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>
+      <!-- CONTENU -->
+      <main class="flex-1 px-4 sm:px-6 py-8">
+        <div class="max-w-[1000px] mx-auto">
 
-                <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 relative overflow-hidden">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Modèle de RAG</p>
-                            <h3 class="text-lg font-bold mt-2 text-goree-gold">Gemini 3.5 Flash Lite</h3>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                            <i data-lucide="cpu" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>
+          <!-- VUE : CORPUS  (tâche 6) -->
+          <div x-show="currentTab === 'corpus'" class="space-y-10">
+
+            <!-- KPI : 3 blocs plats séparés par filets verticaux -->
+            <div class="flex flex-col sm:flex-row border border-line divide-y sm:divide-y-0 sm:divide-x divide-line">
+              <div class="flex-1 px-5 py-4">
+                <div class="font-display text-3xl text-ink" x-text="stats.total_stores">0</div>
+                <div class="text-[13px] text-muted mt-1">Fonds</div>
+              </div>
+              <div class="flex-1 px-5 py-4">
+                <div class="font-display text-3xl text-ink" x-text="stats.total_docs">0</div>
+                <div class="text-[13px] text-muted mt-1">Documents</div>
+              </div>
+              <div class="flex-1 px-5 py-4">
+                <div class="font-display text-xl text-ink mt-1">gemini-flash-lite</div>
+                <div class="text-[13px] text-muted mt-1">Modèle</div>
+              </div>
             </div>
 
-            <!-- Action Bar (Création de Store) -->
-            <div class="bg-goree-surface border border-goree-border rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-lg font-semibold text-white font-display">Créer un nouveau File Search Store</h2>
-                    <p class="text-sm text-slate-400">Ajoutez un conteneur dédié à un monument ou une salle spécifique (ex: Maison des Esclaves, Musée Salle 1).</p>
-                </div>
-                <form @submit.prevent="createStore()" class="flex items-center gap-3 w-full md:w-auto">
-                    <input type="text" x-model="newStoreName" placeholder="ex: goree-musee-salle2" required 
-                        class="bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-goree-gold/60 w-full md:w-64 transition-all">
-                    <button type="submit" :disabled="loading" class="bg-goree-gold hover:bg-goree-goldHover text-goree-bg font-semibold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Créer Store
+            <!-- Nouveau fonds -->
+            <section class="space-y-3">
+              <h2 class="font-display text-xl text-ink">Nouveau fonds</h2>
+              <form @submit.prevent="createStore()" class="flex flex-col sm:flex-row gap-3">
+                <input type="text" x-model="newStoreName" required
+                       placeholder="goree-musee-salle2"
+                       class="flex-1 sm:max-w-xs bg-surface border border-line rounded-sm px-3 py-2
+                              text-sm text-ink placeholder-muted
+                              focus:outline-none focus:border-accent">
+                <button type="submit" :disabled="loading"
+                        class="bg-accent hover:bg-accent-hover text-bg font-medium text-sm
+                               px-4 py-2 rounded-sm transition-colors disabled:opacity-50">
+                  Créer le fonds
+                </button>
+              </form>
+              <p class="prose-help text-[13px] text-muted">
+                Un fonds par monument ou salle du musée (ex. Maison des Esclaves, Musée — Salle 1).
+                Chaque fonds reçoit un identifiant à reporter dans la colonne
+                <span class="font-mono">nom_store_rag</span> de la base <span class="font-mono">goree_ar.db</span>.
+              </p>
+            </section>
+
+            <!-- Liste des fonds -->
+            <section class="space-y-0">
+              <div class="flex items-center justify-between pb-3 border-b border-line">
+                <h2 class="font-display text-xl text-ink">Fonds documentaires</h2>
+                <button @click="fetchStores()"
+                        class="text-[13px] text-muted hover:text-ink flex items-center gap-1.5 transition-colors">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5" :class="loading && 'animate-spin'"></i>
+                  Actualiser
+                </button>
+              </div>
+
+              <template x-if="stores.length === 0">
+                <p class="prose-help text-sm text-muted py-8">
+                  Aucun fonds pour l'instant. Créez-en un ci-dessus pour y déposer des PDF.
+                </p>
+              </template>
+
+              <template x-for="store in stores" :key="store.name">
+                <div class="py-6 border-b border-line">
+
+                  <!-- En-tête du fonds -->
+                  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h3 class="font-display text-lg text-ink" x-text="store.display_name"></h3>
+                    <span class="text-[13px] text-muted" x-text="`${store.docs_count} document(s)`"></span>
+                    <button @click="deleteStore(store.name, store.display_name)"
+                            class="ml-auto text-[13px] text-danger hover:underline">
+                      Supprimer
                     </button>
-                </form>
-            </div>
+                  </div>
 
-            <!-- Liste des Stores -->
-            <div class="space-y-6">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold font-display text-white">Stores Documentaires Déployés</h2>
-                    <button @click="fetchStores()" class="text-xs text-slate-400 hover:text-goree-gold flex items-center gap-1.5 transition-colors">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''"></i> Actualiser
+                  <!-- ID technique -->
+                  <div class="flex items-center gap-2 mt-1.5">
+                    <code class="font-mono text-[12px] text-muted break-all select-all" x-text="store.name"></code>
+                    <button @click="copyToClipboard(store.name)" title="Copier l'identifiant"
+                            class="text-muted hover:text-accent shrink-0">
+                      <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                     </button>
-                </div>
+                  </div>
 
-                <template x-if="stores.length === 0">
-                    <div class="bg-goree-surface/50 border border-dashed border-white/10 rounded-2xl p-12 text-center">
-                        <i data-lucide="inbox" class="w-12 h-12 text-slate-500 mx-auto mb-4"></i>
-                        <h4 class="text-slate-300 font-semibold mb-1">Aucun File Search Store</h4>
-                        <p class="text-sm text-slate-500">Créez votre premier store ci-dessus pour y indexer des PDF historiques.</p>
-                    </div>
-                </template>
-
-                <div class="grid grid-cols-1 gap-6">
-                    <template x-for="store in stores" :key="store.name">
-                        <div class="bg-goree-surface border border-goree-border hover:border-goree-gold/40 rounded-2xl p-6 transition-all shadow-lg shadow-black/20">
-                            <!-- Store Header -->
-                            <div class="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-white/5 gap-4">
-                                <div class="flex items-start gap-4">
-                                    <div class="w-12 h-12 rounded-xl bg-goree-card border border-white/10 flex items-center justify-center text-goree-gold shrink-0">
-                                        <i data-lucide="folder" class="w-6 h-6"></i>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-3">
-                                            <h3 class="text-lg font-bold text-white font-display" x-text="store.display_name"></h3>
-                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-goree-gold/10 text-goree-gold border border-goree-gold/20" x-text="`${store.docs_count} doc(s)`"></span>
-                                        </div>
-                                        <div class="flex items-center gap-2 mt-1.5">
-                                            <code class="text-xs bg-goree-bg px-2 py-0.5 rounded text-slate-400 select-all" x-text="store.name"></code>
-                                            <button @click="copyToClipboard(store.name)" title="Copier pour SQLite (nom_store_rag)" class="text-slate-400 hover:text-goree-gold text-xs transition-colors">
-                                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-3">
-                                    <button @click="deleteStore(store.name, store.display_name)" class="px-3.5 py-2 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-all flex items-center gap-1.5">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i> Supprimer Store
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Documents and Upload Section -->
-                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-5">
-                                <!-- Documents List -->
-                                <div class="lg:col-span-7 space-y-3">
-                                    <h4 class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Documents Indexés dans ce Store</h4>
-                                    
-                                    <template x-if="store.docs.length === 0">
-                                        <p class="text-xs text-slate-500 italic py-2">Aucun document indexé pour le moment.</p>
-                                    </template>
-
-                                    <div class="space-y-2">
-                                        <template x-for="doc in store.docs" :key="doc.name">
-                                            <div class="flex items-center justify-between p-3 rounded-xl bg-goree-bg/60 border border-white/5 hover:border-white/10 transition-all">
-                                                <div class="flex items-center gap-3 min-w-0">
-                                                    <i data-lucide="file-text" class="w-5 h-5 text-amber-400 shrink-0"></i>
-                                                    <div class="min-w-0">
-                                                        <p class="text-sm font-medium text-white truncate" x-text="doc.display_name"></p>
-                                                        <span class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider" x-text="`● ${doc.state}`"></span>
-                                                    </div>
-                                                </div>
-                                                <button @click="deleteDocument(doc.name)" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all">
-                                                    <i data-lucide="x" class="w-4 h-4"></i>
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <!-- Drag & Drop Upload Zone -->
-                                <div class="lg:col-span-5">
-                                    <h4 class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Ajouter un document PDF</h4>
-                                    <div class="border-2 border-dashed border-white/10 hover:border-goree-gold/50 rounded-xl p-6 text-center bg-goree-bg/30 transition-all">
-                                        <i data-lucide="upload-cloud" class="w-8 h-8 text-goree-gold mx-auto mb-2 opacity-80"></i>
-                                        <p class="text-xs text-slate-300 font-medium mb-1">Sélectionner un fichier PDF</p>
-                                        <p class="text-[11px] text-slate-500 mb-4">Google effectuera l'indexation et les embeddings</p>
-                                        
-                                        <input type="file" accept=".pdf" :id="`file_${store.name}`" class="hidden" @change="uploadFile(store.name, $event)">
-                                        <label :for="`file_${store.name}`" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all">
-                                            <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Parcourir mes fichiers
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                  <!-- Documents -->
+                  <div class="mt-4 space-y-1.5">
+                    <template x-if="store.docs.length === 0">
+                      <p class="text-[13px] text-muted">Aucun document indexé.</p>
                     </template>
+                    <template x-for="doc in store.docs" :key="doc.name">
+                      <div class="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
+                        <i data-lucide="file-text" class="w-4 h-4 text-muted shrink-0"></i>
+                        <span class="text-sm text-ink truncate flex-1" x-text="doc.display_name"></span>
+                        <span class="text-[12px] text-muted" x-text="doc.state.toLowerCase()"></span>
+                        <button @click="deleteDocument(doc.name)"
+                                class="text-muted hover:text-danger" title="Retirer le document">
+                          <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Dépôt PDF -->
+                  <div class="mt-4">
+                    <input type="file" accept=".pdf" :id="`file_${store.name}`" class="hidden"
+                           @change="uploadFile(store.name, $event)">
+                    <label :for="`file_${store.name}`"
+                           class="block border border-dashed border-line rounded-sm px-4 py-4 text-center
+                                  cursor-pointer hover:border-accent transition-colors">
+                      <span class="text-[13px] text-muted">
+                        Déposer un PDF — Google se charge de l'indexation et des embeddings
+                      </span>
+                    </label>
+                  </div>
+
                 </div>
-            </div>
-        </div>
+              </template>
+            </section>
+          </div>
 
-        <!-- TAB 2 : RAG PLAYGROUND (BAC À SABLE DE TEST) -->
-        <div x-show="currentTab === 'playground'" class="space-y-6 max-w-4xl mx-auto">
-            <div class="bg-goree-surface border border-goree-border rounded-2xl p-8">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="w-10 h-10 rounded-xl bg-goree-gold/10 border border-goree-gold/20 flex items-center justify-center text-goree-gold">
-                        <i data-lucide="sparkles" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-white font-display">Bac à sable de Test RAG — Guide IA Gorée</h2>
-                        <p class="text-xs text-slate-400">Comportement strict calqué sur l'application mobile (Règles BNF4 de refus hors contexte et adaptation de profil).</p>
-                    </div>
+          <!-- VUE : TEST  (tâche 7) -->
+          <div x-show="currentTab === 'test'" class="space-y-6" style="display:none">
+
+            <div>
+              <h2 class="font-display text-xl text-ink">Test du guide</h2>
+              <p class="prose-help text-[13px] text-muted mt-1">
+                Reproduit le comportement de l'application mobile : ancrage strict sur le fonds
+                choisi, refus poli hors périmètre (règle BNF4), adaptation au profil du visiteur.
+              </p>
+            </div>
+
+            <form @submit.prevent="runPlaygroundTest()" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-[13px] text-muted mb-1.5">Fonds</label>
+                  <select x-model="selectedPlaygroundStore" required
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 focus:outline-none focus:border-accent">
+                    <option value="">Choisir un fonds</option>
+                    <template x-for="s in stores" :key="s.name">
+                      <option :value="s.name" x-text="`${s.display_name} (${s.docs_count})`"></option>
+                    </template>
+                  </select>
                 </div>
+                <div>
+                  <label class="block text-[13px] text-muted mb-1.5">Profil</label>
+                  <select x-model="selectedProfil"
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 focus:outline-none focus:border-accent">
+                    <option value="touriste">Touriste</option>
+                    <option value="eleve">Élève</option>
+                    <option value="universitaire">Universitaire</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[13px] text-muted mb-1.5">Langue</label>
+                  <select x-model="selectedLangue"
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 focus:outline-none focus:border-accent">
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                    <option value="wo">Wolof</option>
+                  </select>
+                </div>
+              </div>
 
-                <form @submit.prevent="runPlaygroundTest()" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="md:col-span-1">
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Store Documentaire</label>
-                            <select x-model="selectedPlaygroundStore" required class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-goree-gold/60">
-                                <option value="">-- Choisir un store --</option>
-                                <template x-for="s in stores" :key="s.name">
-                                    <option :value="s.name" x-text="`${s.display_name} (${s.docs_count} docs)`"></option>
-                                </template>
-                            </select>
-                        </div>
+              <div>
+                <label class="block text-[13px] text-muted mb-1.5">Question du visiteur</label>
+                <textarea x-model="playgroundQuestion" rows="3" required
+                          placeholder="Quelle est l'histoire de la porte du voyage sans retour ?"
+                          class="w-full bg-surface border border-line rounded-sm px-3 py-2 text-sm text-ink
+                                 placeholder-muted focus:outline-none focus:border-accent"></textarea>
+              </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Profil du Visiteur</label>
-                            <select x-model="selectedProfil" class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-goree-gold/60">
-                                <option value="touriste">Touriste (Récit équilibré)</option>
-                                <option value="eleve">Élève (Simple & Pédagogique)</option>
-                                <option value="universitaire">Universitaire (Académique & Critique)</option>
-                            </select>
-                        </div>
+              <button type="submit" :disabled="playgroundLoading"
+                      class="bg-accent hover:bg-accent-hover text-bg font-medium text-sm
+                             px-4 py-2 rounded-sm transition-colors disabled:opacity-50">
+                <span x-text="playgroundLoading ? 'Recherche en cours…' : 'Envoyer la question'"></span>
+              </button>
+            </form>
 
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Langue</label>
-                            <select x-model="selectedLangue" class="w-full bg-goree-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-goree-gold/60">
-                                <option value="fr">🇫🇷 Français</option>
-                                <option value="en">🇬🇧 English</option>
-                                <option value="wo">🇸🇳 Wolof</option>
-                            </select>
-                        </div>
-                    </div>
+            <template x-if="playgroundAnswer">
+              <div class="pt-5 border-t border-line space-y-3">
+                <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <span class="text-[13px] text-muted">Réponse</span>
+                  <span class="text-[12px] text-muted" x-text="`profil : ${selectedProfil}`"></span>
+                  <span class="text-[12px] text-muted" x-text="`langue : ${selectedLangue}`"></span>
+                  <span class="text-[12px] text-muted" x-text="`modèle : ${playgroundModel}`"></span>
+                </div>
+                <div class="bg-surface border border-line rounded-sm p-4 text-sm text-ink
+                            leading-relaxed whitespace-pre-line" x-text="playgroundAnswer"></div>
+              </div>
+            </template>
+          </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Question du visiteur</label>
-                        <textarea x-model="playgroundQuestion" rows="3" required placeholder="ex: Quelle est l'histoire de la porte du voyage sans retour ?" 
-                            class="w-full bg-goree-bg border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-goree-gold/60 placeholder-slate-500"></textarea>
-                    </div>
+          <!-- VUE : AIDE  (tâche 8) -->
+          <div x-show="currentTab === 'aide'" class="space-y-8 prose-help" style="display:none">
 
-                    <button type="submit" :disabled="playgroundLoading" class="w-full bg-goree-gold hover:bg-goree-goldHover text-goree-bg font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2">
-                        <i data-lucide="send" class="w-4 h-4" :class="playgroundLoading ? 'animate-bounce' : ''"></i>
-                        <span x-text="playgroundLoading ? 'Interrogation du RAG en cours...' : 'Tester la réponse de l\'Agent IA (Règles BNF4)'"></span>
-                    </button>
-                </form>
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Un fonds par lieu</h2>
+              <p class="text-sm text-muted">
+                Créez un fonds distinct pour chaque monument ou chaque salle physique du musée :
+                <span class="font-mono text-[13px]">goree-maison-esclaves</span>,
+                <span class="font-mono text-[13px]">goree-musee-salle1</span>,
+                <span class="font-mono text-[13px]">goree-musee-salle2</span>…
+                Ce cloisonnement évite les erreurs d'étiquetage et garde chaque contexte
+                historique étanche.
+              </p>
+            </section>
 
-                <!-- Zone de Réponse -->
-                <template x-if="playgroundAnswer">
-                    <div class="mt-8 pt-6 border-t border-white/10 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h4 class="text-xs uppercase tracking-wider text-goree-gold font-semibold flex items-center gap-2">
-                                <i data-lucide="bot" class="w-4 h-4"></i> Réponse de l'Agent IA Gorée AR :
-                            </h4>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium" x-text="`Profil : ${selectedProfil}`"></span>
-                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium" x-text="`Langue : ${selectedLangue.toUpperCase()}`"></span>
-                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium" x-text="`Modèle : ${playgroundModel}`"></span>
-                            </div>
-                        </div>
-                        <div class="p-5 rounded-xl bg-goree-bg/80 border border-white/10 text-slate-200 text-sm leading-relaxed whitespace-pre-line shadow-inner" x-text="playgroundAnswer"></div>
-                    </div>
-                </template>
-            </div>
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Reporter l'identifiant dans SQLite</h2>
+              <p class="text-sm text-muted">
+                Chaque fonds reçoit un identifiant technique du type
+                <span class="font-mono text-[13px] break-all">fileSearchStores/goreemaisonesclaves-vxqxk0scxpj5</span>.
+                Copiez-le depuis la vue Corpus et collez-le dans la colonne
+                <span class="font-mono text-[13px]">nom_store_rag</span> de la table
+                <span class="font-mono text-[13px]">Site</span>, base
+                <span class="font-mono text-[13px]">goree_ar.db</span> de l'application Unity.
+              </p>
+            </section>
+
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Documents acceptés</h2>
+              <p class="text-sm text-muted">
+                PDF uniquement. À l'envoi, le nom d'origine du fichier est conservé.
+                Google réalise le découpage, les embeddings et l'indexation ; l'opération
+                peut prendre quelques secondes avant que le document passe à l'état
+                <span class="font-mono text-[13px]">active</span>.
+              </p>
+            </section>
+
+            <section class="space-y-2">
+              <h2 class="font-display text-xl text-ink">Règle BNF4 — refus hors périmètre</h2>
+              <p class="text-sm text-muted">
+                Le guide ne répond qu'à partir des documents du fonds et des faits historiques
+                de Gorée et de la traite négrière. Toute question sans lien (géographie
+                générale, météo, calcul…) doit être poliment refusée. La vue Test permet de
+                vérifier ce comportement avant de relier un fonds à l'application.
+              </p>
+            </section>
+          </div>
+
         </div>
-
-    </main>
-
-    <!-- Notification Toast -->
-    <div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 bg-goree-card border border-goree-gold/40 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3">
-        <i data-lucide="check-circle" class="w-5 h-5 text-goree-gold"></i>
-        <span class="text-sm font-medium" x-text="toast.message"></span>
+      </main>
     </div>
+  </div>
+
+  <!-- TOAST -->
+  <div x-show="toast.show" x-transition
+       class="fixed bottom-6 right-6 z-50 bg-surface border border-line text-ink
+              px-4 py-3 rounded-sm shadow-lg flex items-center gap-2"
+       style="display:none">
+    <i data-lucide="check" class="w-4 h-4 text-accent"></i>
+    <span class="text-sm" x-text="toast.message"></span>
+  </div>
+
+  <script>lucide.createIcons();</script>
 </body>
 </html>
