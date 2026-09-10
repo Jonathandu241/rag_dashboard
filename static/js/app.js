@@ -2,7 +2,6 @@ function ragApp() {
     return {
         currentTab: 'corpus',
         sidebarOpen: false,
-        theme: 'light',
         stores: [],
         stats: { total_stores: 0, total_docs: 0 },
         newStoreName: '',
@@ -17,27 +16,7 @@ function ragApp() {
         toast: { show: false, message: '' },
 
         init() {
-            // Thème : lu depuis localStorage, appliqué à <html>
-            try {
-                this.theme = localStorage.getItem('goree-theme') || 'light';
-            } catch (e) {
-                this.theme = 'light';
-            }
-            this.applyTheme();
             this.fetchStores();
-            this.$nextTick(() => lucide.createIcons());
-        },
-
-        applyTheme() {
-            document.documentElement.classList.toggle('dark', this.theme === 'dark');
-        },
-
-        toggleTheme() {
-            this.theme = this.theme === 'dark' ? 'light' : 'dark';
-            try {
-                localStorage.setItem('goree-theme', this.theme);
-            } catch (e) { /* stockage indisponible : la bascule reste valable pour la session */ }
-            this.applyTheme();
             this.$nextTick(() => lucide.createIcons());
         },
 
@@ -76,7 +55,7 @@ function ragApp() {
                 const res = await fetch('/api/stores/create', { method: 'POST', body: fd });
                 if (res.ok) {
                     this.newStoreName = '';
-                    this.showToast("Fonds créé.");
+                    this.showToast("Store créé avec succès !");
                     await this.fetchStores();
                 }
             } catch (e) {
@@ -87,13 +66,13 @@ function ragApp() {
         },
 
         async deleteStore(storeName, displayName) {
-            if (!confirm(`Confirmer la suppression du fonds '${displayName}' et de tous ses documents ?`)) return;
+            if (!confirm(`Confirmer la suppression du store '${displayName}' et de TOUS ses documents ?`)) return;
             const fd = new FormData();
             fd.append('store_name', storeName);
             this.loading = true;
             try {
                 await fetch('/api/stores/delete', { method: 'POST', body: fd });
-                this.showToast("Fonds supprimé.");
+                this.showToast("Store supprimé.");
                 await this.fetchStores();
             } catch (e) {
                 alert("Erreur suppression: " + e.message);
@@ -109,7 +88,7 @@ function ragApp() {
             fd.append('store_name', storeName);
             fd.append('file', file);
             this.loading = true;
-            this.showToast(`Indexation de '${file.name}' en cours…`);
+            this.showToast(`Upload et indexation de '${file.name}' chez Google en cours...`);
             try {
                 const res = await fetch('/api/documents/upload', { method: 'POST', body: fd });
                 if (res.ok) {
@@ -128,7 +107,7 @@ function ragApp() {
         },
 
         async deleteDocument(docName) {
-            if (!confirm("Supprimer ce document du fonds ?")) return;
+            if (!confirm("Supprimer ce document du store ?")) return;
             const fd = new FormData();
             fd.append('document_name', docName);
             this.loading = true;

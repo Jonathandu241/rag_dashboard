@@ -34,14 +34,15 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 - **Framework Web Backend :** FastAPI + Uvicorn (ASGI)
 - **Moteur de Templates :** Jinja2
 - **Frontend & UI :** HTML5, Tailwind CSS (via CDN, config inline), Alpine.js, Lucide Icons
-- **Design System :** Charte « Gorée AR » éditoriale — coque dashboard (sidebar gauche +
-  topbar), thème clair par défaut + sombre (`html.dark`, persisté `localStorage`).
-  Fond chaux `#F2EEE6` / `#1A1815`, encre basalte `#1E1B16` / `#E8E2D4`, accent laiton
-  `#9C7A24` / `#C9A64E` (usage rare : bouton primaire, liens, onglet actif), brique
-  `#8A3B2E` pour la suppression. Aucun dégradé, rayon 2px, séparation par filets `#D8D1C2`.
-  Typographies : *Marcellus* (titres, chiffres), *IBM Plex Sans* (corps), *IBM Plex Mono*
-  (identifiants de fonds uniquement). Tokens sémantiques Tailwind : `bg`, `surface`, `ink`,
-  `muted`, `line`, `accent`, `accent-hover`, `danger`.
+- **Design System :** Charte graphique « Gorée AR » — **coque dashboard** (sidebar gauche
+  Corpus / Bac à sable / Aide + topbar collante), **thème sombre uniquement**
+  (`<html class="dark">`, pas de bascule). Namespace de couleurs `goree-*` : fond
+  `#0B0D17`, surface `#13172B`, card `#1B203B`, bordure `rgba(232,200,74,.15)`, or
+  `#E8C84A` / hover `#F4D665`, accent bleu `#3B82F6`. Dégradés radiaux or/bleu sur le
+  fond (`static/css/app.css`), `gold-gradient-text`, cartes `rounded-xl`/`rounded-2xl`
+  avec ombres colorées (`shadow-amber-500/10`), or utilisé librement, icônes Lucide
+  partout, drapeaux emoji dans le sélecteur de langue, point vert pulsant « API
+  Connectée ». Typographies : *Marcellus* (titres) et *Plus Jakarta Sans* (corps).
 - **SDK & API Cloud :** 
   - SDK officiel `google-genai` pour la gestion des `file_search_stores` (création, upload de PDF, suppression)
   - Requêtes HTTP REST directes (`urllib.request` ou `requests`) vers l'endpoint v1beta `generateContent` pour le bac à sable de test (garantissant un alignement 1:1 avec les appels `UnityWebRequest` de l'application mobile)
