@@ -57,12 +57,16 @@ Ce dossier (`rag_dashboard`) constitue le **Back-Office d'Administration du Corp
 ## 3. Règles de Sécurité et Clé API — Strictes
 
 1. **Jamais de clé/secret en dur dans le code source** :
-   - `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` sont chargés depuis `.env` via `python-dotenv`.
+   - `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE` sont chargés depuis `.env` via `python-dotenv`.
    - Le fichier `.env` doit **toujours** être présent localement mais **exclu de tout versionnement Git** (`.gitignore`, ainsi que `uploads/`).
    - `SUPABASE_SERVICE_KEY` est la clé `service_role` (bypass RLS) : elle ne quitte jamais le backend, jamais exposée au navigateur ni au template.
 2. **Affichage sécurisé sur l'interface** :
    - L'interface web ne doit jamais afficher la clé Gemini en clair (masquage obligatoire : `AQ...wdyg`). Aucune clé Supabase n'est transmise au front.
    - Le bucket `corpus-pdfs` est **privé** : la visualisation d'un PDF passe par une URL signée (expiration 1 h) générée côté serveur, jamais par un lien public.
+3. **Authentification obligatoire** :
+   - L'accès à la plateforme passe par une connexion (`/login`). Toute route hors `/login`, `/logout`, `/static/*` est refusée sans session (302 pour les pages, 401 pour `/api/*`).
+   - Comptes dans `public.admin_users` (Supabase, backend-only). Mots de passe **bcrypt** — jamais en clair, jamais renvoyés au front. Création via `python create_admin.py`, pas d'inscription publique.
+   - Session : cookie signé `goree_session` (httponly, `same_site=lax`, `secure` si `SESSION_COOKIE_SECURE=true`), durée 8 h. En production HTTPS : `SESSION_COOKIE_SECURE=true` **obligatoire** et `SESSION_SECRET` fixé dans l'environnement.
 
 ---
 

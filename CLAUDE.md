@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `AGENTS.md` holds the firm project conventions (stack, security, RAG store granularity, BNF4 requirements, trilingual support). Read it and follow it. This file only adds architecture context and commands not covered there.
 
 Key constraints from `AGENTS.md` worth repeating:
-- Never hardcode an API key. `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` are loaded from `.env` via `python-dotenv`; `.env` must never be committed.
+- Never hardcode a secret. `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE` are loaded from `.env` via `python-dotenv`; `.env` must never be committed.
 - One File Search Store per monument / museum room (strict compartmentalization). Store display names follow `goree-<lieu>` (e.g. `goree-maison-esclaves`).
 - Always pass `config={"display_name": file.filename}` on upload so Google doesn't name the doc after the temp file.
 - The playground system prompt must enforce BNF4: refuse politely anything outside Gorée / the transatlantic slave trade; adapt tone to profile (`touriste` / `eleve` / `universitaire`); support `fr` / `en` / `wo`.
@@ -20,8 +20,9 @@ Key constraints from `AGENTS.md` worth repeating:
 
 ```bash
 pip install -r requirements.txt
-python app.py          # dev server on http://127.0.0.1:8000 with --reload
-python test_call.py    # one-shot Gemini File Search sanity check (edit the hardcoded store ID inside)
+python app.py                              # dev server on http://127.0.0.1:8000 with --reload
+python create_admin.py <email> "<Nom>"     # create/reset an admin account (password prompted, hidden)
+python test_call.py                        # one-shot Gemini File Search sanity check (edit the hardcoded store ID inside)
 ```
 
 There is no test suite, linter, or build step. `test_call.py` is a manual diagnostic script, not an automated test.
@@ -38,12 +39,23 @@ Two distinct paths to Google, deliberately:
 
 `construire_prompt_systeme(profil, langue)` builds the strict BNF4 system prompt and is a direct port of `GestionnaireContexte.cs` from the Unity app — keep the two aligned when either changes.
 
+### Authentication
+
+Every route is gated by the `require_login` HTTP middleware except `/login`, `/logout`, `/static/*`, `/favicon.ico` (`PUBLIC_PATHS`): no session → 302 to `/login` for pages, 401 JSON for `/api/*`. Middleware order matters — `require_login` is registered **before** `SessionMiddleware` so it runs **after** it (Starlette runs middleware in reverse registration order); don't reorder.
+
+- Accounts live in `public.admin_users` (Supabase, backend-only via `service_role`). Passwords are bcrypt (`bcrypt` module directly — `passlib` 1.7.4 is incompatible with `bcrypt` 5.x, don't reintroduce it).
+- `POST /login` verifies email (case-insensitive) + `is_active` + bcrypt, sets `request.session["user_id"]`, bumps `last_login_at`. Generic "Identifiants invalides" on failure. In-memory per-IP rate limit: 5 failed attempts / 5 min → 429.
+- `GET /logout` clears the session. `templates/login.html` is a standalone page (no `ragApp()`).
+- `index.html` topbar shows `current_user_name` + a `/logout` link. `app.js` calls `_checkAuth(res)` after each `fetch` — a 401 redirects the browser to `/login`.
+- Session cookie `goree_session`: httponly, `same_site=lax`, `https_only=SESSION_COOKIE_SECURE` (`.env`, `false` local / `true` behind HTTPS), 8 h. `SESSION_SECRET` from `.env`; if missing, an ephemeral key is generated (sessions drop on restart) with a warning.
+- No signup page. Create accounts with `create_admin.py`.
+
 ### Supabase — source-PDF storage (optional)
 
 Google File Search keeps chunks/embeddings but does **not** let you re-download the original PDF. To make the "Visualiser" button work, `app.py` keeps a copy of every uploaded PDF in Supabase:
 
 - **Bucket** `corpus-pdfs` (private) — one object per document at `<store_ref>/<uuid>.pdf`.
-- **Table** `public.corpus_documents` (project `GoreeAR`, `ubajzrbphbqoomtxoqsk`) — links `google_document_name` ↔ `storage_path` + `file_name`, `size_bytes`, `store_display_name`, `created_at`. RLS on, **no public policy**: only the backend touches it, with the `service_role` key.
+- **Table** `public.corpus_documents` (project `GoreeAR`, `ubajzrbphbqoomtxoqsk`) — links `google_document_name` ↔ `storage_path` + `file_name`, `size_bytes`, `store_display_name`, `created_at`. RLS on, **no public policy**, `anon`/`authenticated` revoked: only the backend touches it, with the `service_role` key. Same lockdown applies to `public.admin_users`.
 - `get_supabase()` returns `None` when `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` are absent → the copy step and the `has_local_file` flag are simply skipped (graceful degradation; docs indexed before this feature show `has_local_file: false`).
 - Upload writes to Google, then best-effort copies to the bucket + inserts the row. Delete (document or whole store) cleans the bucket and the table too.
 - `GET /api/documents/file?document_name=…` → 307 redirect to a 1 h signed URL. `/api/stores` docs carry `size_bytes`, `created_at`, `has_local_file`; stats carry `storage_enabled`.
@@ -60,7 +72,8 @@ Lucide icons throughout, flag emoji in the language select. Fonts: *Marcellus* (
 headings) + *Plus Jakarta Sans* (body).
 
 Layout is a dashboard shell: fixed left sidebar (Corpus / Documents / Test / Aide nav, active
-entry = gold pill), sticky topbar with the current view title. Below 1024px the sidebar
+entry = gold pill), sticky topbar with the current view title, connected-user name and a
+`/logout` link. Below 1024px the sidebar
 collapses into a ☰ drawer with an overlay. All interactivity is one Alpine.js component,
 `ragApp()` in `static/js/app.js` — `currentTab` (`corpus` / `documents` / `test` / `aide`),
 `sidebarOpen`, `goTo()`, `showAllStores` + `visibleStores` getter (Corpus shows 2 stores
@@ -80,4 +93,4 @@ This repo is the **back-office** half of Gorée AR. The **front-office** is a Un
 - The model names in `test_query`'s `modeles` list and in `test_call.py` are the project's chosen defaults; leave them as-is unless asked to change model selection.
 - `get_client()` raises HTTP 400 (not 500) when `GEMINI_API_KEY` is missing — preserve that distinction.
 - On Windows, `python app.py` works (emoji were removed from the startup `print()`s). `python -m uvicorn app:app` also works.
-- Supabase project `GoreeAR` also hosts the **mobile app's** schema (`point_interet`, `routes`, `traduction`, …). The back-office only owns `corpus_documents` and the `corpus-pdfs` bucket — don't touch the rest.
+- Supabase project `GoreeAR` also hosts the **mobile app's** schema (`point_interet`, `routes`, `traduction`, …). The back-office only owns `corpus_documents`, `admin_users`, and the `corpus-pdfs` bucket — don't touch the rest.
