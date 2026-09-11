@@ -17,6 +17,7 @@ function ragApp() {
         playgroundLoading: false,
         toast: { show: false, message: '' },
         pdf: { open: false, url: '', title: '' },
+        confirmDialog: { open: false, title: '', message: '', confirmLabel: 'Supprimer', onConfirm: null },
 
         init() {
             this.fetchStores();
@@ -84,6 +85,22 @@ function ragApp() {
             setTimeout(() => this.toast.show = false, 3000);
         },
 
+        // --- Modale de confirmation (remplace confirm() natif) ---
+        askConfirm(title, message, onConfirm, confirmLabel = 'Supprimer') {
+            this.confirmDialog = { open: true, title, message, confirmLabel, onConfirm };
+            document.body.style.overflow = 'hidden';
+        },
+        closeConfirm() {
+            this.confirmDialog.open = false;
+            this.confirmDialog.onConfirm = null;
+            document.body.style.overflow = this.pdf.open ? 'hidden' : '';
+        },
+        async runConfirm() {
+            const action = this.confirmDialog.onConfirm;
+            this.closeConfirm();
+            if (action) await action();
+        },
+
         // Renvoie true si la session a expiré (401) et redirige vers /login
         _checkAuth(res) {
             if (res.status === 401) {
@@ -129,21 +146,26 @@ function ragApp() {
             }
         },
 
-        async deleteStore(storeName, displayName) {
-            if (!confirm(`Confirmer la suppression du store '${displayName}' et de TOUS ses documents ?`)) return;
-            const fd = new FormData();
-            fd.append('store_name', storeName);
-            this.loading = true;
-            try {
-                const res = await fetch('/api/stores/delete', { method: 'POST', body: fd });
-                if (this._checkAuth(res)) return;
-                this.showToast("Store supprimé.");
-                await this.fetchStores();
-            } catch (e) {
-                alert("Erreur suppression: " + e.message);
-            } finally {
-                this.loading = false;
-            }
+        deleteStore(storeName, displayName) {
+            this.askConfirm(
+                'Supprimer ce store ?',
+                `Le store « ${displayName} » et TOUS ses documents indexés seront supprimés définitivement. Cette action est irréversible.`,
+                async () => {
+                    const fd = new FormData();
+                    fd.append('store_name', storeName);
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/stores/delete', { method: 'POST', body: fd });
+                        if (this._checkAuth(res)) return;
+                        this.showToast("Store supprimé.");
+                        await this.fetchStores();
+                    } catch (e) {
+                        alert("Erreur suppression: " + e.message);
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            );
         },
 
         async uploadFile(storeName, event) {
@@ -172,21 +194,26 @@ function ragApp() {
             }
         },
 
-        async deleteDocument(docName) {
-            if (!confirm("Supprimer ce document du store ?")) return;
-            const fd = new FormData();
-            fd.append('document_name', docName);
-            this.loading = true;
-            try {
-                const res = await fetch('/api/documents/delete', { method: 'POST', body: fd });
-                if (this._checkAuth(res)) return;
-                this.showToast("Document supprimé.");
-                await this.fetchStores();
-            } catch (e) {
-                alert("Erreur: " + e.message);
-            } finally {
-                this.loading = false;
-            }
+        deleteDocument(docName, displayName) {
+            this.askConfirm(
+                'Supprimer ce document ?',
+                `« ${displayName || 'Ce document'} » sera retiré du store et sa copie archivée sera supprimée. Cette action est irréversible.`,
+                async () => {
+                    const fd = new FormData();
+                    fd.append('document_name', docName);
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/documents/delete', { method: 'POST', body: fd });
+                        if (this._checkAuth(res)) return;
+                        this.showToast("Document supprimé.");
+                        await this.fetchStores();
+                    } catch (e) {
+                        alert("Erreur: " + e.message);
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            );
         },
 
         async runPlaygroundTest() {
